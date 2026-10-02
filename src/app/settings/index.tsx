@@ -12,39 +12,47 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]} showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>SCOUT PROFILE</Text>
-        <Text style={styles.title}>Your CrowdLens</Text>
-        <Text style={styles.subtitle}>Wallet identity, trust signals and mission history.</Text>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>Profile</Text>
+            <Text style={styles.subtitle}>Your scout identity.</Text>
+          </View>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>FO</Text>
+          </View>
+        </View>
 
         <View style={styles.identityCard}>
-          <View style={styles.avatar}><Text style={styles.avatarText}>FO</Text></View>
-          <View style={styles.identityCopy}>
+          <View>
             <Text style={styles.name}>Faith Oluwalana</Text>
             <Text style={styles.role}>CrowdLens Scout</Text>
           </View>
-          <View style={styles.scoreBadge}>
-            <Ionicons color="#FF6A13" name="shield-checkmark" size={14} />
+          <View style={styles.score}>
+            <Ionicons color="#FF6413" name="shield-checkmark" size={14} />
             <Text style={styles.scoreText}>92</Text>
           </View>
         </View>
 
         <View style={styles.statsRow}>
-          <Stat value="12" label="Completed" />
+          <Stat value="12" label="Done" />
           <Stat value="96%" label="Approved" />
-          <Stat value="$18.40" label="Earned" accent />
+          <Stat value="$18" label="Earned" accent />
         </View>
 
         <Text style={styles.sectionTitle}>Wallet</Text>
         <View style={styles.walletCard}>
-          <View style={styles.walletHeader}>
+          <View style={styles.walletTop}>
             <View style={styles.walletIcon}>
-              <Ionicons color="#FF6A13" name="wallet-outline" size={20} />
+              <Ionicons color="#FF6413" name="wallet-outline" size={19} />
             </View>
             <View style={styles.walletCopy}>
-              <Text style={styles.walletTitle}>{address ? 'Wallet connected' : 'Connect your wallet'}</Text>
-              <Text style={styles.walletText} numberOfLines={1}>
-                {address ?? 'Required to accept rewards and sign proof submissions.'}
+              <Text style={styles.walletTitle}>{address ? 'Connected' : 'Connect wallet'}</Text>
+              <Text numberOfLines={1} style={styles.walletText}>
+                {address ?? 'Needed for rewards and signatures.'}
               </Text>
             </View>
           </View>
@@ -54,19 +62,20 @@ export default function ProfileScreen() {
               Connect Wallet
             </WalletUiConnectButton>
           ) : (
-            <View style={styles.connectedBadge}>
+            <View style={styles.connectedRow}>
               <View style={styles.connectedDot} />
-              <Text style={styles.connectedText}>Connected on Solana</Text>
+              <Text style={styles.connectedText}>Solana connected</Text>
             </View>
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>Trust layer</Text>
-        <View style={styles.trustCard}>
-          <Ionicons color="#FF6A13" name="location-outline" size={20} />
-          <View style={styles.trustCopy}>
-            <Text style={styles.trustTitle}>Proof of Presence</Text>
-            <Text style={styles.trustText}>Location, capture time and wallet signature will be attached to qualifying submissions.</Text>
+        <View style={styles.simpleRow}>
+          <View style={styles.simpleIcon}>
+            <Ionicons color="#FF6413" name="location-outline" size={18} />
+          </View>
+          <View style={styles.simpleCopy}>
+            <Text style={styles.simpleTitle}>Proof of Presence</Text>
+            <Text style={styles.simpleText}>Location + live capture + wallet signature</Text>
           </View>
         </View>
       </ScrollView>
@@ -77,43 +86,43 @@ export default function ProfileScreen() {
 function Stat({ value, label, accent = false }: { value: string; label: string; accent?: boolean }) {
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statValue, accent && styles.accent]}>{value}</Text>
+      <Text style={[styles.statValue, accent && styles.statAccent]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0A0A0A' },
+  screen: { flex: 1, backgroundColor: '#0B0B0C' },
   content: { paddingHorizontal: 20, paddingBottom: 30 },
-  eyebrow: { color: '#FF5A00', fontSize: 10, fontWeight: '900', letterSpacing: 1.4, marginBottom: 8 },
-  title: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', letterSpacing: -1 },
-  subtitle: { color: '#777777', fontSize: 14, lineHeight: 20, marginTop: 8 },
-  identityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#141414', borderWidth: 1, borderColor: '#222222', borderRadius: 22, padding: 16, marginTop: 26 },
-  avatar: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#21130C', alignItems: 'center', justifyContent: 'center', marginRight: 13 },
-  avatarText: { color: '#FF6A13', fontSize: 16, fontWeight: '900' },
-  identityCopy: { flex: 1 },
-  name: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', marginBottom: 4 },
-  role: { color: '#6E6E6E', fontSize: 11 },
-  scoreBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#21130C', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
-  scoreText: { color: '#FF6A13', fontSize: 11, fontWeight: '900' },
-  statsRow: { flexDirection: 'row', gap: 9, marginTop: 12, marginBottom: 28 },
-  stat: { flex: 1, backgroundColor: '#111111', borderRadius: 18, paddingVertical: 14, alignItems: 'center' },
-  statValue: { color: '#FFFFFF', fontSize: 17, fontWeight: '900', marginBottom: 4 },
-  accent: { color: '#FF6A13' },
-  statLabel: { color: '#646464', fontSize: 9 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '800', marginBottom: 12 },
-  walletCard: { backgroundColor: '#131313', borderWidth: 1, borderColor: '#242424', borderRadius: 20, padding: 16, marginBottom: 26, gap: 16 },
-  walletHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  walletIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#21130C', alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+  title: { color: '#FFFFFF', fontSize: 27, fontWeight: '800', letterSpacing: -0.8 },
+  subtitle: { color: '#707070', fontSize: 12, marginTop: 5 },
+  avatar: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#25170F', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#FF6413', fontSize: 12, fontWeight: '800' },
+  identityCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#151517', borderRadius: 20, padding: 17 },
+  name: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  role: { color: '#666666', fontSize: 10, marginTop: 4 },
+  score: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#2A190F', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7 },
+  scoreText: { color: '#FF6413', fontSize: 10, fontWeight: '800' },
+  statsRow: { flexDirection: 'row', gap: 9, marginTop: 10, marginBottom: 28 },
+  stat: { flex: 1, backgroundColor: '#141416', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
+  statValue: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  statAccent: { color: '#FF6413' },
+  statLabel: { color: '#606060', fontSize: 9, marginTop: 4 },
+  sectionTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  walletCard: { backgroundColor: '#151517', borderRadius: 20, padding: 15, gap: 14, marginBottom: 14 },
+  walletTop: { flexDirection: 'row', alignItems: 'center' },
+  walletIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#2A190F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   walletCopy: { flex: 1 },
-  walletTitle: { color: '#EEEEEE', fontSize: 13, fontWeight: '800', marginBottom: 4 },
-  walletText: { color: '#686868', fontSize: 10, lineHeight: 15 },
-  connectedBadge: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', backgroundColor: '#151C15', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 8 },
-  connectedDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#5CCB70' },
-  connectedText: { color: '#88C991', fontSize: 10, fontWeight: '800' },
-  trustCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: '#121212', borderRadius: 18, padding: 16 },
-  trustCopy: { flex: 1 },
-  trustTitle: { color: '#ECECEC', fontSize: 13, fontWeight: '800', marginBottom: 5 },
-  trustText: { color: '#696969', fontSize: 11, lineHeight: 17 },
+  walletTitle: { color: '#F0F0F0', fontSize: 12, fontWeight: '700' },
+  walletText: { color: '#666666', fontSize: 10, marginTop: 4 },
+  connectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  connectedDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#64C875' },
+  connectedText: { color: '#7EB988', fontSize: 10, fontWeight: '700' },
+  simpleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#141416', borderRadius: 18, padding: 15 },
+  simpleIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#20160F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  simpleCopy: { flex: 1 },
+  simpleTitle: { color: '#EAEAEA', fontSize: 12, fontWeight: '700' },
+  simpleText: { color: '#626262', fontSize: 9, marginTop: 4 },
 })
