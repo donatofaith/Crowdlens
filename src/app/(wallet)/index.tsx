@@ -1,128 +1,114 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { router } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-const missions = [
-  {
-    id: '1',
-    tag: 'LIVE CHECK',
-    title: 'Is the Web3 meetup happening right now?',
-    location: 'Bodija, Ibadan',
-    distance: '1.2 km',
-    reward: '3 USDC',
-  },
-  {
-    id: '2',
-    tag: 'STOCK CHECK',
-    title: 'Confirm this laptop is still available in-store',
-    location: 'Ring Road, Ibadan',
-    distance: '2.8 km',
-    reward: '5 USDC',
-  },
-  {
-    id: '3',
-    tag: 'PHOTO PROOF',
-    title: 'Verify this billboard has been installed',
-    location: 'Iwo Road, Ibadan',
-    distance: '4.1 km',
-    reward: '4 USDC',
-  },
-]
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets()
 
   return (
     <View style={styles.screen}>
-      <View style={styles.orangeGlow} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 14 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View>
-            <View style={styles.brandRow}>
-              <View style={styles.brandMark} />
-              <Text style={styles.brand}>CrowdLens</Text>
+        <View style={styles.topBar}>
+          <View style={styles.mark}>
+            <View style={[styles.markBar, { height: 10 }]} />
+            <View style={[styles.markBar, { height: 18 }]} />
+            <View style={[styles.markBar, { height: 7 }]} />
+          </View>
+
+          <Pressable onPress={() => router.push('/settings')} style={styles.avatar}>
+            <Text style={styles.avatarText}>F</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.hello}>Hi Faith</Text>
+        <Text style={styles.subtitle}>3 missions are waiting nearby</Text>
+
+        <Pressable onPress={() => router.push('/tools')} style={styles.featuredCard}>
+          <View style={styles.featuredGlow} />
+          <RadarPulse />
+
+          <View style={styles.featuredCopy}>
+            <Text style={styles.featuredLabel}>LIVE CHECK</Text>
+            <Text style={styles.featuredTitle}>Is the Web3 meetup live?</Text>
+            <Text style={styles.featuredLocation}>Bodija, Ibadan · 1.2 km</Text>
+
+            <View style={styles.featuredFooter}>
+              <View style={styles.peopleRow}>
+                <View style={[styles.person, styles.personOne]}>
+                  <Text style={styles.personText}>A</Text>
+                </View>
+                <View style={[styles.person, styles.personTwo]}>
+                  <Text style={styles.personText}>K</Text>
+                </View>
+              </View>
+              <Text style={styles.reward}>3 USDC</Text>
             </View>
-            <Text style={styles.greeting}>Good evening, Faith</Text>
           </View>
+        </Pressable>
 
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>FO</Text>
-          </View>
-        </View>
-
-        <View style={styles.heroCard}>
-          <View style={styles.heroIcon}>
-            <Ionicons color="#FF6A13" name="eye-outline" size={24} />
-          </View>
-          <Text style={styles.heroEyebrow}>REAL-WORLD PROOF, ON DEMAND</Text>
-          <Text style={styles.heroTitle}>See what is happening anywhere.</Text>
-          <Text style={styles.heroText}>
-            Ask nearby people to verify a place, product or event and receive fresh proof from the real world.
-          </Text>
-
-          <Pressable onPress={() => router.push('/create')} style={styles.heroButton}>
-            <Text style={styles.heroButtonText}>Create a mission</Text>
-            <Ionicons color="#FFFFFF" name="arrow-forward" size={18} />
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Nearby</Text>
+          <Pressable onPress={() => router.push('/create')} style={styles.createButton}>
+            <Ionicons color="#0B0B0B" name="add" size={22} />
           </Pressable>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your overview</Text>
-          <Text style={styles.sectionHint}>This week</Text>
-        </View>
-
-        <View style={styles.statsRow}>
-          <StatCard label="Completed" value="12" />
-          <StatCard label="Active" value="4" />
-          <StatCard label="Earned" value="$18.40" highlight />
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nearby missions</Text>
-          <Pressable onPress={() => router.push('/tools')}>
-            <Text style={styles.viewAll}>View all</Text>
+        <View style={styles.grid}>
+          <Pressable onPress={() => router.push('/tools')} style={[styles.tile, styles.tallTile]}>
+            <View style={styles.tileIcon}>
+              <Ionicons color="#FF6200" name="location-outline" size={19} />
+            </View>
+            <View>
+              <Text style={styles.tileValue}>4</Text>
+              <Text style={styles.tileLabel}>Nearby</Text>
+            </View>
           </Pressable>
-        </View>
 
-        <View style={styles.missionList}>
-          {missions.map((mission) => (
-            <Pressable key={mission.id} onPress={() => router.push('/tools')} style={styles.missionCard}>
-              <View style={styles.missionTopRow}>
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{mission.tag}</Text>
-                </View>
-                <View style={styles.rewardPill}>
-                  <Text style={styles.rewardText}>{mission.reward}</Text>
-                </View>
-              </View>
-
-              <Text style={styles.missionTitle}>{mission.title}</Text>
-
-              <View style={styles.missionMeta}>
-                <View style={styles.metaItem}>
-                  <Ionicons color="#7B7B7B" name="location-outline" size={15} />
-                  <Text style={styles.metaText}>{mission.location}</Text>
-                </View>
-                <View style={styles.dot} />
-                <Text style={styles.metaText}>{mission.distance}</Text>
-              </View>
+          <View style={styles.rightColumn}>
+            <Pressable onPress={() => router.push('/updates')} style={styles.tile}>
+              <Text style={styles.tileValue}>2</Text>
+              <Text style={styles.tileLabel}>Active</Text>
             </Pressable>
-          ))}
+
+            <View style={[styles.tile, styles.orangeTile]}>
+              <Text style={[styles.tileValue, styles.orangeTileValue]}>18.4</Text>
+              <Text style={[styles.tileLabel, styles.orangeTileLabel]}>USDC earned</Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </View>
   )
 }
 
-function StatCard({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+function RadarPulse() {
+  const pulse = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: 2200,
+        useNativeDriver: true,
+      }),
+    )
+    animation.start()
+    return () => animation.stop()
+  }, [pulse])
+
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1.55] })
+  const opacity = pulse.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.38, 0.12, 0] })
+
   return (
-    <View style={[styles.statCard, highlight && styles.statCardHighlight]}>
-      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View pointerEvents="none" style={styles.radarWrap}>
+      <Animated.View style={[styles.radarRing, { opacity, transform: [{ scale }] }]} />
+      <View style={styles.radarRingStatic} />
+      <View style={styles.radarDot} />
     </View>
   )
 }
@@ -130,242 +116,236 @@ function StatCard({ label, value, highlight = false }: { label: string; value: s
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
-  },
-  orangeGlow: {
-    position: 'absolute',
-    right: -90,
-    top: 60,
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: '#7A2700',
-    opacity: 0.22,
+    backgroundColor: '#0B0B0C',
   },
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 28,
+    paddingHorizontal: 18,
+    paddingBottom: 34,
   },
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 26,
   },
-  brandRow: {
+  mark: {
+    height: 24,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    gap: 4,
+    paddingTop: 2,
   },
-  brandMark: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF5A00',
-  },
-  brand: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  greeting: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.7,
+  markBar: {
+    width: 3,
+    borderRadius: 3,
+    backgroundColor: '#A4A4A4',
   },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#1B1B1B',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#171719',
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: '#2B2B2D',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: '#FF6A13',
+    color: '#FF6A00',
+    fontSize: 14,
     fontWeight: '800',
-    fontSize: 13,
   },
-  heroCard: {
-    borderRadius: 26,
-    backgroundColor: '#15110F',
-    borderWidth: 1,
-    borderColor: '#332116',
-    padding: 22,
-    marginBottom: 28,
+  hello: {
+    color: '#FFFFFF',
+    fontSize: 23,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+  },
+  subtitle: {
+    color: '#67676B',
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 22,
+  },
+  featuredCard: {
+    minHeight: 150,
+    borderRadius: 19,
+    backgroundColor: '#171719',
     overflow: 'hidden',
-  },
-  heroIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    backgroundColor: '#24150E',
-    alignItems: 'center',
+    padding: 18,
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 26,
+    borderWidth: 1,
+    borderColor: '#202023',
   },
-  heroEyebrow: {
-    color: '#FF6A13',
-    fontSize: 10,
+  featuredGlow: {
+    position: 'absolute',
+    right: -38,
+    top: -38,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#B84000',
+    opacity: 0.3,
+  },
+  featuredCopy: {
+    width: '72%',
+  },
+  featuredLabel: {
+    color: '#FF6A00',
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.1,
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  heroTitle: {
+  featuredTitle: {
     color: '#FFFFFF',
-    fontSize: 28,
-    lineHeight: 33,
-    fontWeight: '900',
-    letterSpacing: -0.9,
-    maxWidth: 290,
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '800',
+    letterSpacing: -0.35,
   },
-  heroText: {
-    color: '#9B9B9B',
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 12,
-    maxWidth: 320,
+  featuredLocation: {
+    color: '#707074',
+    fontSize: 10,
+    marginTop: 7,
   },
-  heroButton: {
-    alignSelf: 'flex-start',
+  featuredFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    marginTop: 22,
-    backgroundColor: '#FF5A00',
-    borderRadius: 999,
-    paddingVertical: 13,
-    paddingHorizontal: 18,
+    marginTop: 17,
   },
-  heroButtonText: {
+  peopleRow: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  person: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#171719',
+  },
+  personOne: {
+    backgroundColor: '#6B5044',
+  },
+  personTwo: {
+    backgroundColor: '#4D5868',
+    marginLeft: -6,
+  },
+  personText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 8,
     fontWeight: '800',
   },
-  sectionHeader: {
+  reward: {
+    color: '#A5A5A7',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  radarWrap: {
+    position: 'absolute',
+    right: 13,
+    top: 26,
+    width: 86,
+    height: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radarRing: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#FF6A00',
+  },
+  radarRingStatic: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 1,
+    borderColor: 'rgba(255,106,0,0.35)',
+  },
+  radarDot: {
+    position: 'absolute',
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#FF6A00',
+    borderWidth: 2,
+    borderColor: '#24150C',
+  },
+  sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 13,
   },
   sectionTitle: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  sectionHint: {
-    color: '#656565',
-    fontSize: 12,
-  },
-  viewAll: {
-    color: '#FF6A13',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 30,
-  },
-  statCard: {
-    flex: 1,
-    minHeight: 94,
-    borderRadius: 20,
-    backgroundColor: '#141414',
-    borderWidth: 1,
-    borderColor: '#202020',
-    padding: 14,
+  createButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: '#FF6200',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  statCardHighlight: {
-    backgroundColor: '#1C120D',
-    borderColor: '#3B2417',
+  grid: {
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 178,
   },
-  statValue: {
-    color: '#FFFFFF',
-    fontSize: 21,
-    fontWeight: '900',
-    marginBottom: 5,
+  rightColumn: {
+    flex: 1,
+    gap: 10,
   },
-  statValueHighlight: {
-    color: '#FF6A13',
-  },
-  statLabel: {
-    color: '#6F6F6F',
-    fontSize: 11,
-  },
-  missionList: {
-    gap: 12,
-  },
-  missionCard: {
-    backgroundColor: '#121212',
-    borderRadius: 22,
+  tile: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: '#171719',
     borderWidth: 1,
-    borderColor: '#202020',
-    padding: 18,
-  },
-  missionTopRow: {
-    flexDirection: 'row',
+    borderColor: '#202023',
+    padding: 16,
     justifyContent: 'space-between',
+  },
+  tallTile: {
+    flex: 1,
+  },
+  tileIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: '#24150D',
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'center',
   },
-  tag: {
-    borderRadius: 999,
-    backgroundColor: '#1A1A1A',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+  orangeTile: {
+    backgroundColor: '#EF5B00',
+    borderColor: '#EF5B00',
   },
-  tagText: {
-    color: '#858585',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.7,
-  },
-  rewardPill: {
-    borderRadius: 999,
-    backgroundColor: '#23140D',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  rewardText: {
-    color: '#FF6A13',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  missionTitle: {
+  tileValue: {
     color: '#FFFFFF',
-    fontSize: 17,
-    lineHeight: 23,
+    fontSize: 25,
     fontWeight: '800',
-    letterSpacing: -0.25,
-    maxWidth: 310,
+    letterSpacing: -0.7,
   },
-  missionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    gap: 7,
+  tileLabel: {
+    color: '#66666A',
+    fontSize: 10,
+    marginTop: 3,
   },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  orangeTileValue: {
+    color: '#FFFFFF',
   },
-  metaText: {
-    color: '#737373',
-    fontSize: 11,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#4D4D4D',
+  orangeTileLabel: {
+    color: 'rgba(255,255,255,0.72)',
   },
 })
