@@ -1,25 +1,26 @@
 {
   "expo": {
+    "name": "CrowdLens",
+    "slug": "crowdlens",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "crowdlens",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/images/icon.png",
     "android": {
+      "package": "com.donatofaith.crowdlens",
+      "versionCode": 1,
+      "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0B",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "package": "com.anonymous.crowdlens",
-      "predictiveBackGestureEnabled": false
+      }
     },
-    "experiments": {
-      "reactCompiler": true,
-      "typedRoutes": true
-    },
-    "icon": "./assets/images/icon.png",
     "ios": {
       "icon": "./assets/expo.icon"
     },
-    "name": "CrowdLens",
-    "orientation": "portrait",
     "plugins": [
       [
         "expo-dev-client",
@@ -54,9 +55,10 @@
       ],
       "expo-status-bar"
     ],
-    "scheme": "crowdlens",
-    "slug": "crowdlens",
-    "userInterfaceStyle": "dark",
+    "experiments": {
+      "reactCompiler": true,
+      "typedRoutes": true
+    },
     "web": {
       "favicon": "./assets/images/favicon.png",
       "output": "static"
