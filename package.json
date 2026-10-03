@@ -15,21 +15,21 @@
     "start": "expo start",
     "web": "expo start --web"
   },
-  "displayName": "Crowdlens example",
-  "description": "A Solana mobile app template with Expo, React Native, Solana Kit, Mobile Wallet Adapter actions, and Uniwind.",
+  "displayName": "CrowdLens",
+  "description": "Android-first Solana Mobile app for requesting and submitting live, location-verified real-world proof.",
   "usecase": "Mobile",
   "keywords": [
-    "expo",
+    "solana-mobile",
     "mobile-wallet-adapter",
+    "proof-of-presence",
+    "expo",
     "react-native",
     "solana-kit",
-    "tailwind",
-    "uniwind",
-    "wallet",
-    "wallet-ui"
+    "geolocation",
+    "camera"
   ],
   "main": "./index.js",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.5",
     "@expo/vector-icons": "^15.0.2",
