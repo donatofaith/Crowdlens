@@ -1,10 +1,30 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useStore } from '@nanostores/react'
 import { router } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { $missions } from '@/features/missions/data-access/mission-store'
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets()
+  const missions = useStore($missions)
+  const closest = missions[0]
+
+  function openClosestMission() {
+    if (!closest) return
+    router.push({
+      pathname: '/tools/verify',
+      params: {
+        mission: closest.title,
+        place: closest.place,
+        reward: String(closest.reward),
+        radius: String(closest.radius),
+        targetLat: String(closest.targetLat),
+        targetLon: String(closest.targetLon),
+      },
+    } as never)
+  }
 
   return (
     <View style={styles.screen}>
@@ -23,7 +43,7 @@ export default function HomeScreen() {
           <View style={styles.panelTop}>
             <View>
               <Text style={styles.panelSmall}>NEARBY NOW</Text>
-              <Text style={styles.panelNumber}>3</Text>
+              <Text style={styles.panelNumber}>{missions.length}</Text>
               <Text style={styles.panelLabel}>missions waiting</Text>
             </View>
             <View style={styles.radarButton}>
@@ -41,28 +61,35 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.searchPill}>
+        <Pressable onPress={() => router.push('/tools')} style={styles.searchPill}>
           <Ionicons color="#FF7A18" name="search" size={18} />
-          <Text style={styles.searchText}>Search missions or places</Text>
+          <Text style={styles.searchText}>Browse missions</Text>
           <View style={styles.filterButton}>
             <Ionicons color="#D8D8D8" name="options-outline" size={17} />
           </View>
-        </View>
+        </Pressable>
 
         <Text style={styles.sectionTitle}>Closest mission</Text>
-        <Pressable onPress={() => router.push('/tools')} style={styles.missionCard}>
-          <View style={styles.cardIcon}>
-            <Ionicons color="#FF7A18" name="radio-outline" size={22} />
-          </View>
-          <View style={styles.cardCopy}>
-            <Text style={styles.cardTitle}>Is the Web3 meetup live?</Text>
-            <Text style={styles.cardMeta}>Bodija · 1.2 km away</Text>
-          </View>
-          <View style={styles.rewardButton}>
-            <Text style={styles.reward}>3</Text>
-            <Text style={styles.rewardUnit}>USDC</Text>
-          </View>
-        </Pressable>
+        {closest ? (
+          <Pressable onPress={openClosestMission} style={styles.missionCard}>
+            <View style={styles.cardIcon}>
+              <Ionicons color="#FF7A18" name={closest.icon} size={22} />
+            </View>
+            <View style={styles.cardCopy}>
+              <Text style={styles.cardTitle}>{closest.title}</Text>
+              <Text style={styles.cardMeta}>{closest.place} · {closest.distanceLabel}</Text>
+            </View>
+            <View style={styles.rewardButton}>
+              <Text style={styles.reward}>{closest.reward}</Text>
+              <Text style={styles.rewardUnit}>USDC</Text>
+            </View>
+          </Pressable>
+        ) : (
+          <Pressable onPress={() => router.push('/create')} style={styles.emptyCard}>
+            <Ionicons color="#FF7A18" name="add-circle-outline" size={24} />
+            <Text style={styles.emptyText}>Create the first mission</Text>
+          </Pressable>
+        )}
 
         <View style={styles.quoteCard}>
           <Ionicons color="#FF7A18" name="location-outline" size={18} />
@@ -115,6 +142,8 @@ const styles = StyleSheet.create({
   rewardButton: { width: 58, height: 58, borderRadius: 20, backgroundColor: '#F36B08', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
   reward: { color: '#111111', fontSize: 18, fontWeight: '900', lineHeight: 20 },
   rewardUnit: { color: 'rgba(0,0,0,0.62)', fontSize: 7, fontWeight: '900', marginTop: 2 },
+  emptyCard: { minHeight: 88, borderRadius: 23, backgroundColor: '#151517', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 9 },
+  emptyText: { color: '#B0B0B4', fontSize: 12, fontWeight: '800' },
   quoteCard: { marginTop: 14, borderRadius: 19, backgroundColor: '#121214', flexDirection: 'row', alignItems: 'center', padding: 15, borderWidth: 1, borderColor: '#1D1D20' },
   quote: { color: '#78787C', fontSize: 10, marginLeft: 9, flex: 1 },
 })
