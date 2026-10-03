@@ -1,22 +1,41 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as Location from 'expo-location'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const REQUIRED_READINGS = 3
 const MAX_ACCURACY_METERS = 30
-const MISSION_RADIUS_METERS = 50
 const DEFAULT_TARGET = { latitude: 7.4356, longitude: 3.9143 }
 
 type Target = typeof DEFAULT_TARGET
 
 export default function VerifyPresenceScreen() {
   const insets = useSafeAreaInsets()
+  const params = useLocalSearchParams<{
+    mission?: string
+    place?: string
+    reward?: string
+    radius?: string
+    targetLat?: string
+    targetLon?: string
+  }>()
+
+  const mission = params.mission || 'Is the Web3 meetup live?'
+  const place = params.place || 'Bodija, Ibadan'
+  const reward = params.reward || '3'
+  const missionRadius = Number(params.radius) || 50
+  const parsedLat = Number(params.targetLat)
+  const parsedLon = Number(params.targetLon)
+  const initialTarget: Target = {
+    latitude: Number.isFinite(parsedLat) ? parsedLat : DEFAULT_TARGET.latitude,
+    longitude: Number.isFinite(parsedLon) ? parsedLon : DEFAULT_TARGET.longitude,
+  }
+
   const watcher = useRef<Location.LocationSubscription | null>(null)
-  const targetRef = useRef<Target>(DEFAULT_TARGET)
-  const [target, setTarget] = useState<Target>(DEFAULT_TARGET)
+  const targetRef = useRef<Target>(initialTarget)
+  const [target, setTarget] = useState<Target>(initialTarget)
   const [permission, setPermission] = useState<'idle' | 'granted' | 'denied'>('idle')
   const [location, setLocation] = useState<Location.LocationObject | null>(null)
   const [tracking, setTracking] = useState(false)
@@ -34,7 +53,7 @@ export default function VerifyPresenceScreen() {
     ? distanceInMeters(location.coords.latitude, location.coords.longitude, target.latitude, target.longitude)
     : null
   const isAccurate = accuracy !== null && accuracy <= MAX_ACCURACY_METERS
-  const isInside = distance !== null && distance <= MISSION_RADIUS_METERS
+  const isInside = distance !== null && distance <= missionRadius
   const isMocked = Boolean(location?.mocked)
   const verified = stableReadings >= REQUIRED_READINGS && isAccurate && isInside && (!isMocked || __DEV__)
 
@@ -78,7 +97,7 @@ export default function VerifyPresenceScreen() {
       targetRef.current.latitude,
       targetRef.current.longitude,
     )
-    const passes = nextAccuracy <= MAX_ACCURACY_METERS && nextDistance <= MISSION_RADIUS_METERS && (!next.mocked || __DEV__)
+    const passes = nextAccuracy <= MAX_ACCURACY_METERS && nextDistance <= missionRadius && (!next.mocked || __DEV__)
     setStableReadings((count) => (passes ? Math.min(REQUIRED_READINGS, count + 1) : 0))
   }
 
@@ -93,6 +112,7 @@ export default function VerifyPresenceScreen() {
       Alert.alert('Start location first', 'Get one location reading before setting the emulator test target.')
       return
     }
+
     const nextTarget = { latitude: location.coords.latitude, longitude: location.coords.longitude }
     setTarget(nextTarget)
     targetRef.current = nextTarget
@@ -107,9 +127,10 @@ export default function VerifyPresenceScreen() {
       params: {
         targetLat: target.latitude.toString(),
         targetLon: target.longitude.toString(),
-        radius: MISSION_RADIUS_METERS.toString(),
-        mission: 'Is the Web3 meetup live?',
-        place: 'Bodija, Ibadan',
+        radius: missionRadius.toString(),
+        mission,
+        place,
+        reward,
       },
     } as never)
   }
@@ -127,9 +148,9 @@ export default function VerifyPresenceScreen() {
 
         <View style={styles.missionCard}>
           <View style={styles.orangeRail} />
-          <Text style={styles.missionLabel}>LIVE CHECK</Text>
-          <Text style={styles.missionTitle}>Is the Web3 meetup live?</Text>
-          <Text style={styles.missionMeta}>Bodija, Ibadan · 50 m verification zone</Text>
+          <Text style={styles.missionLabel}>LIVE CHECK · {reward} USDC</Text>
+          <Text style={styles.missionTitle}>{mission}</Text>
+          <Text style={styles.missionMeta}>{place} · {missionRadius} m verification zone</Text>
         </View>
 
         <View style={styles.statusPanel}>
@@ -140,7 +161,7 @@ export default function VerifyPresenceScreen() {
           </View>
           <Text style={styles.statusTitle}>{verified ? 'You are on-site' : tracking ? 'Checking your position' : 'Verify your location'}</Text>
           <Text style={styles.statusText}>
-            {verified ? 'Three consistent precise readings confirmed.' : 'CrowdLens checks GPS accuracy and your distance from the mission point.'}
+            {verified ? 'Three consistent precise readings confirmed.' : 'CrowdLens checks GPS accuracy and distance from the mission point.'}
           </Text>
           <View style={styles.readingDots}>
             {Array.from({ length: REQUIRED_READINGS }).map((_, index) => (
@@ -161,7 +182,7 @@ export default function VerifyPresenceScreen() {
         <View style={styles.checkList}>
           <CheckRow active={permission === 'granted'} icon="navigate-outline" label="Location permission" detail={permission === 'denied' ? 'Denied' : permission === 'granted' ? 'Allowed' : 'Waiting'} />
           <CheckRow active={isAccurate} icon="locate-outline" label="Precise reading" detail={accuracy === null ? `Need ≤ ${MAX_ACCURACY_METERS} m` : `±${Math.round(accuracy)} m accuracy`} />
-          <CheckRow active={isInside} icon="radio-outline" label="Inside mission zone" detail={distance === null ? `${MISSION_RADIUS_METERS} m radius` : `${Math.round(distance)} m from point`} />
+          <CheckRow active={isInside} icon="radio-outline" label="Inside mission zone" detail={distance === null ? `${missionRadius} m radius` : `${Math.round(distance)} m from point`} />
           <CheckRow active={!isMocked || __DEV__} icon="shield-checkmark-outline" label="Location integrity" detail={isMocked && __DEV__ ? 'Emulator test mode' : isMocked ? 'Mock location detected' : 'No mock flag detected'} />
         </View>
 
@@ -245,7 +266,7 @@ const styles = StyleSheet.create({
   missionCard: { backgroundColor: '#171719', borderRadius: 22, padding: 18, overflow: 'hidden', marginBottom: 14 },
   orangeRail: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, backgroundColor: '#FF6200' },
   missionLabel: { color: '#FF6A00', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
-  missionTitle: { color: '#FFFFFF', fontSize: 19, lineHeight: 24, fontWeight: '900', maxWidth: 260 },
+  missionTitle: { color: '#FFFFFF', fontSize: 19, lineHeight: 24, fontWeight: '900', maxWidth: 290 },
   missionMeta: { color: '#6F6F73', fontSize: 10, marginTop: 8 },
   statusPanel: { minHeight: 270, borderRadius: 26, backgroundColor: '#121214', alignItems: 'center', justifyContent: 'center', padding: 22, marginBottom: 12 },
   ring: { width: 112, height: 112, borderRadius: 56, backgroundColor: '#26170F', borderWidth: 2, borderColor: '#6D2D09', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
