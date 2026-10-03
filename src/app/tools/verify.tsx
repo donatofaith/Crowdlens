@@ -16,7 +16,6 @@ export default function VerifyPresenceScreen() {
   const insets = useSafeAreaInsets()
   const watcher = useRef<Location.LocationSubscription | null>(null)
   const targetRef = useRef<Target>(DEFAULT_TARGET)
-
   const [target, setTarget] = useState<Target>(DEFAULT_TARGET)
   const [permission, setPermission] = useState<'idle' | 'granted' | 'denied'>('idle')
   const [location, setLocation] = useState<Location.LocationObject | null>(null)
@@ -28,18 +27,11 @@ export default function VerifyPresenceScreen() {
     targetRef.current = target
   }, [target])
 
-  useEffect(() => {
-    return () => watcher.current?.remove()
-  }, [])
+  useEffect(() => () => watcher.current?.remove(), [])
 
   const accuracy = location?.coords.accuracy ?? null
   const distance = location
-    ? distanceInMeters(
-        location.coords.latitude,
-        location.coords.longitude,
-        target.latitude,
-        target.longitude,
-      )
+    ? distanceInMeters(location.coords.latitude, location.coords.longitude, target.latitude, target.longitude)
     : null
   const isAccurate = accuracy !== null && accuracy <= MAX_ACCURACY_METERS
   const isInside = distance !== null && distance <= MISSION_RADIUS_METERS
@@ -51,8 +43,7 @@ export default function VerifyPresenceScreen() {
     setStableReadings(0)
 
     try {
-      const servicesEnabled = await Location.hasServicesEnabledAsync()
-      if (!servicesEnabled) {
+      if (!(await Location.hasServicesEnabledAsync())) {
         setError('Location services are turned off on this device.')
         return
       }
@@ -65,16 +56,11 @@ export default function VerifyPresenceScreen() {
       }
 
       setPermission('granted')
-      const first = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
-      handleReading(first)
+      handleReading(await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }))
 
       watcher.current?.remove()
       watcher.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 1,
-          timeInterval: 1500,
-        },
+        { accuracy: Location.Accuracy.Highest, distanceInterval: 1, timeInterval: 1500 },
         handleReading,
       )
       setTracking(true)
@@ -85,7 +71,6 @@ export default function VerifyPresenceScreen() {
 
   function handleReading(next: Location.LocationObject) {
     setLocation(next)
-
     const nextAccuracy = next.coords.accuracy ?? Number.POSITIVE_INFINITY
     const nextDistance = distanceInMeters(
       next.coords.latitude,
@@ -93,11 +78,7 @@ export default function VerifyPresenceScreen() {
       targetRef.current.latitude,
       targetRef.current.longitude,
     )
-    const passes =
-      nextAccuracy <= MAX_ACCURACY_METERS &&
-      nextDistance <= MISSION_RADIUS_METERS &&
-      (!next.mocked || __DEV__)
-
+    const passes = nextAccuracy <= MAX_ACCURACY_METERS && nextDistance <= MISSION_RADIUS_METERS && (!next.mocked || __DEV__)
     setStableReadings((count) => (passes ? Math.min(REQUIRED_READINGS, count + 1) : 0))
   }
 
@@ -112,28 +93,30 @@ export default function VerifyPresenceScreen() {
       Alert.alert('Start location first', 'Get one location reading before setting the emulator test target.')
       return
     }
-
-    const nextTarget = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-    }
+    const nextTarget = { latitude: location.coords.latitude, longitude: location.coords.longitude }
     setTarget(nextTarget)
     targetRef.current = nextTarget
     setStableReadings(0)
   }
 
   function continueToCamera() {
-    if (!verified) return
+    if (!verified || !location) return
     stopLocationCheck()
-    Alert.alert('Presence verified', 'Your live location passed. Next we will attach the in-app camera proof.')
+    router.push({
+      pathname: '/tools/camera',
+      params: {
+        targetLat: target.latitude.toString(),
+        targetLon: target.longitude.toString(),
+        radius: MISSION_RADIUS_METERS.toString(),
+        mission: 'Is the Web3 meetup live?',
+        place: 'Bodija, Ibadan',
+      },
+    } as never)
   }
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 14 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 14 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <Pressable onPress={() => router.back()} style={styles.iconButton}>
             <Ionicons color="#FFFFFF" name="chevron-back" size={20} />
@@ -152,23 +135,13 @@ export default function VerifyPresenceScreen() {
         <View style={styles.statusPanel}>
           <View style={[styles.ring, verified && styles.ringVerified]}>
             <View style={[styles.ringInner, verified && styles.ringInnerVerified]}>
-              <Ionicons
-                color={verified ? '#0B0B0C' : '#FF6800'}
-                name={verified ? 'checkmark' : 'location'}
-                size={28}
-              />
+              <Ionicons color={verified ? '#0B0B0C' : '#FF6800'} name={verified ? 'checkmark' : 'location'} size={28} />
             </View>
           </View>
-
-          <Text style={styles.statusTitle}>
-            {verified ? 'You are on-site' : tracking ? 'Checking your position' : 'Verify your location'}
-          </Text>
+          <Text style={styles.statusTitle}>{verified ? 'You are on-site' : tracking ? 'Checking your position' : 'Verify your location'}</Text>
           <Text style={styles.statusText}>
-            {verified
-              ? 'Three consistent precise readings confirmed.'
-              : 'CrowdLens checks GPS accuracy and your distance from the mission point.'}
+            {verified ? 'Three consistent precise readings confirmed.' : 'CrowdLens checks GPS accuracy and your distance from the mission point.'}
           </Text>
-
           <View style={styles.readingDots}>
             {Array.from({ length: REQUIRED_READINGS }).map((_, index) => (
               <View key={index} style={[styles.readingDot, index < stableReadings && styles.readingDotActive]} />
@@ -177,11 +150,7 @@ export default function VerifyPresenceScreen() {
         </View>
 
         <View style={styles.metricsRow}>
-          <Metric
-            label="Accuracy"
-            value={accuracy === null ? '—' : `±${Math.round(accuracy)} m`}
-            good={isAccurate}
-          />
+          <Metric label="Accuracy" value={accuracy === null ? '—' : `±${Math.round(accuracy)} m`} good={isAccurate} />
           <Metric
             label="Distance"
             value={distance === null ? '—' : distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(1)} km`}
@@ -190,38 +159,16 @@ export default function VerifyPresenceScreen() {
         </View>
 
         <View style={styles.checkList}>
-          <CheckRow
-            active={permission === 'granted'}
-            icon="navigate-outline"
-            label="Location permission"
-            detail={permission === 'denied' ? 'Denied' : permission === 'granted' ? 'Allowed' : 'Waiting'}
-          />
-          <CheckRow
-            active={isAccurate}
-            icon="locate-outline"
-            label="Precise reading"
-            detail={accuracy === null ? `Need ≤ ${MAX_ACCURACY_METERS} m` : `±${Math.round(accuracy)} m accuracy`}
-          />
-          <CheckRow
-            active={isInside}
-            icon="radio-outline"
-            label="Inside mission zone"
-            detail={distance === null ? `${MISSION_RADIUS_METERS} m radius` : `${Math.round(distance)} m from point`}
-          />
-          <CheckRow
-            active={!isMocked || __DEV__}
-            icon="shield-checkmark-outline"
-            label="Location integrity"
-            detail={isMocked && __DEV__ ? 'Emulator test mode' : isMocked ? 'Mock location detected' : 'No mock flag detected'}
-          />
+          <CheckRow active={permission === 'granted'} icon="navigate-outline" label="Location permission" detail={permission === 'denied' ? 'Denied' : permission === 'granted' ? 'Allowed' : 'Waiting'} />
+          <CheckRow active={isAccurate} icon="locate-outline" label="Precise reading" detail={accuracy === null ? `Need ≤ ${MAX_ACCURACY_METERS} m` : `±${Math.round(accuracy)} m accuracy`} />
+          <CheckRow active={isInside} icon="radio-outline" label="Inside mission zone" detail={distance === null ? `${MISSION_RADIUS_METERS} m radius` : `${Math.round(distance)} m from point`} />
+          <CheckRow active={!isMocked || __DEV__} icon="shield-checkmark-outline" label="Location integrity" detail={isMocked && __DEV__ ? 'Emulator test mode' : isMocked ? 'Mock location detected' : 'No mock flag detected'} />
         </View>
 
         {location && (
           <View style={styles.coordinates}>
             <Text style={styles.coordinatesLabel}>LIVE COORDINATES</Text>
-            <Text style={styles.coordinatesValue}>
-              {location.coords.latitude.toFixed(6)}, {location.coords.longitude.toFixed(6)}
-            </Text>
+            <Text style={styles.coordinatesValue}>{location.coords.latitude.toFixed(6)}, {location.coords.longitude.toFixed(6)}</Text>
           </View>
         )}
 
@@ -264,17 +211,7 @@ function Metric({ label, value, good }: { label: string; value: string; good: bo
   )
 }
 
-function CheckRow({
-  active,
-  icon,
-  label,
-  detail,
-}: {
-  active: boolean
-  icon: keyof typeof Ionicons.glyphMap
-  label: string
-  detail: string
-}) {
+function CheckRow({ active, icon, label, detail }: { active: boolean; icon: keyof typeof Ionicons.glyphMap; label: string; detail: string }) {
   return (
     <View style={styles.checkRow}>
       <View style={[styles.checkIcon, active && styles.checkIconActive]}>
@@ -294,9 +231,7 @@ function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number
   const toRadians = (value: number) => (value * Math.PI) / 180
   const dLat = toRadians(lat2 - lat1)
   const dLon = toRadians(lon2 - lon1)
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2
   return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
