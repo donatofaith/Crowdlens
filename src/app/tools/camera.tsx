@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useMobileWallet } from '@wallet-ui/react-native-kit'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useMobileWallet } from '@wallet-ui/react-native-kit'
 import { useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -78,12 +78,7 @@ export default function LiveCameraScreen() {
 
       const liveLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest })
       const accuracy = liveLocation.coords.accuracy ?? Number.POSITIVE_INFINITY
-      const distance = distanceInMeters(
-        liveLocation.coords.latitude,
-        liveLocation.coords.longitude,
-        targetLat,
-        targetLon,
-      )
+      const distance = distanceInMeters(liveLocation.coords.latitude, liveLocation.coords.longitude, targetLat, targetLon)
       const mocked = Boolean(liveLocation.mocked)
 
       if (accuracy > MAX_ACCURACY_METERS) {
@@ -169,7 +164,7 @@ export default function LiveCameraScreen() {
         scout: walletAddress,
         proofSignature: signature,
       },
-    })
+    } as never)
   }
 
   if (!permission) {
@@ -181,9 +176,7 @@ export default function LiveCameraScreen() {
       <View style={[styles.permissionScreen, { paddingTop: insets.top + 28, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.permissionIcon}><Ionicons color="#FF6A00" name="camera" size={30} /></View>
         <Text style={styles.permissionTitle}>Live camera required</Text>
-        <Text style={styles.permissionText}>
-          CrowdLens only accepts proof captured inside the app. Gallery uploads are not available for verification missions.
-        </Text>
+        <Text style={styles.permissionText}>CrowdLens only accepts proof captured inside the app. Gallery uploads are not available for verification missions.</Text>
         <Pressable onPress={() => void requestPermission()} style={styles.permissionButton}>
           <Text style={styles.permissionButtonText}>Allow camera</Text>
           <Ionicons color="#0A0A0B" name="arrow-forward" size={18} />
@@ -302,7 +295,7 @@ function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number
   const toRadians = (value: number) => (value * Math.PI) / 180
   const dLat = toRadians(lat2 - lat1)
   const dLon = toRadians(lon2 - lon1)
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2
   return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
@@ -317,7 +310,7 @@ const styles = StyleSheet.create({
   permissionButtonText: { color: '#0A0A0B', fontSize: 13, fontWeight: '900' },
   backTextButton: { padding: 16 },
   backText: { color: '#6D6D72', fontSize: 11, fontWeight: '700' },
-  cameraShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.12)' },
+  cameraShade: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.12)' },
   cameraUi: { flex: 1, justifyContent: 'space-between', paddingHorizontal: 18 },
   topBarCamera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cameraIconButton: { width: 44, height: 44, borderRadius: 17, backgroundColor: 'rgba(12,12,13,0.78)', alignItems: 'center', justifyContent: 'center' },
@@ -343,21 +336,21 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF6A00' },
   liveText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
   metaCard: { borderRadius: 22, backgroundColor: '#131315', paddingHorizontal: 14, marginBottom: 12 },
-  metaRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#202023' },
+  metaRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#202023' },
   metaIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: '#25160E', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   metaCopy: { flex: 1 },
   metaLabel: { color: '#69696E', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
   metaValue: { color: '#E7E7E9', fontSize: 10, fontWeight: '700', marginTop: 3, maxWidth: 220 },
-  primaryButton: { height: 56, borderRadius: 19, backgroundColor: '#FF6A00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
-  submitButton: { marginTop: 10 },
+  primaryButton: { height: 54, borderRadius: 19, backgroundColor: '#FF6A00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 10 },
+  submitButton: { backgroundColor: '#FF7A18' },
   primaryButtonText: { color: '#0A0A0B', fontSize: 13, fontWeight: '900' },
   secondaryButton: { height: 44, borderRadius: 16, backgroundColor: '#161618', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 9 },
   secondaryButtonText: { color: '#A0A0A5', fontSize: 11, fontWeight: '800' },
   walletCard: { borderRadius: 20, backgroundColor: '#141416', padding: 14, gap: 10 },
   walletTitle: { color: '#F4F4F5', fontSize: 12, fontWeight: '800' },
   walletText: { color: '#6F6F74', fontSize: 10, lineHeight: 15 },
-  signedCard: { minHeight: 74, borderRadius: 21, backgroundColor: '#FF6A00', padding: 13, flexDirection: 'row', alignItems: 'center' },
-  signedIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: '#FFB173', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  signedCard: { minHeight: 74, borderRadius: 21, backgroundColor: '#FF6A00', padding: 14, flexDirection: 'row', alignItems: 'center' },
+  signedIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#FFB173', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   signedCopy: { flex: 1 },
   signedTitle: { color: '#0A0A0B', fontSize: 12, fontWeight: '900' },
   signedText: { color: '#3D210D', fontSize: 9, fontWeight: '700', marginTop: 4 },
