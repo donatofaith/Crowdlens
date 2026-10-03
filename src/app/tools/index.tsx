@@ -1,19 +1,37 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useStore } from '@nanostores/react'
 import { router } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-const missions = [
-  { title: 'Is the Web3 meetup live?', place: 'Bodija', distance: '1.2 km', reward: '3', icon: 'radio-outline' as const },
-  { title: 'Is this laptop still in stock?', place: 'Ring Road', distance: '2.8 km', reward: '5', icon: 'cube-outline' as const },
-  { title: 'Confirm this billboard is up', place: 'Iwo Road', distance: '4.1 km', reward: '4', icon: 'camera-outline' as const },
-  { title: 'How long is the queue here?', place: 'Dugbe', distance: '5.4 km', reward: '2', icon: 'people-outline' as const },
-]
+import { $missions } from '@/features/missions/data-access/mission-store'
 
 export default function MissionsScreen() {
   const insets = useSafeAreaInsets()
+  const missions = useStore($missions)
   const [filter, setFilter] = useState('Nearby')
+
+  const visibleMissions = useMemo(() => {
+    const copy = [...missions]
+    if (filter === 'Reward') return copy.sort((a, b) => b.reward - a.reward)
+    if (filter === 'New') return copy.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    return copy
+  }, [filter, missions])
+
+  function openMission(mission: (typeof visibleMissions)[number]) {
+    router.push({
+      pathname: '/tools/verify',
+      params: {
+        mission: mission.title,
+        place: mission.place,
+        reward: String(mission.reward),
+        radius: String(mission.radius),
+        targetLat: String(mission.targetLat),
+        targetLon: String(mission.targetLon),
+      },
+    } as never)
+  }
 
   return (
     <View style={styles.screen}>
@@ -23,8 +41,8 @@ export default function MissionsScreen() {
             <Text style={styles.kicker}>DISCOVER</Text>
             <Text style={styles.title}>Missions</Text>
           </View>
-          <Pressable style={styles.searchButton}>
-            <Ionicons color="#FF7A18" name="search" size={19} />
+          <Pressable onPress={() => router.push('/create')} style={styles.searchButton}>
+            <Ionicons color="#FF7A18" name="add" size={21} />
           </Pressable>
         </View>
 
@@ -37,12 +55,8 @@ export default function MissionsScreen() {
         </View>
 
         <View style={styles.list}>
-          {missions.map((mission, index) => (
-            <Pressable
-              key={mission.title}
-              onPress={() => router.push('/tools/verify')}
-              style={[styles.card, index === 0 && styles.cardFeatured]}
-            >
+          {visibleMissions.map((mission, index) => (
+            <Pressable key={mission.id} onPress={() => openMission(mission)} style={[styles.card, index === 0 && styles.cardFeatured]}>
               <View style={styles.cardLeft}>
                 <View style={[styles.iconButton, index === 0 && styles.iconButtonFeatured]}>
                   <Ionicons color={index === 0 ? '#111111' : '#FF7A18'} name={mission.icon} size={20} />
@@ -50,13 +64,16 @@ export default function MissionsScreen() {
               </View>
 
               <View style={styles.cardCopy}>
-                <Text style={styles.cardTitle}>{mission.title}</Text>
-                <Text style={styles.cardMeta}>{mission.place} · {mission.distance}</Text>
+                <Text style={[styles.cardTitle, index === 0 && styles.cardTitleFeatured]}>{mission.title}</Text>
+                <Text style={[styles.cardMeta, index === 0 && styles.cardMetaFeatured]}>
+                  {mission.place} · {mission.distanceLabel}
+                </Text>
+                {mission.source === 'local' && <Text style={styles.localBadge}>CREATED ON THIS DEVICE</Text>}
               </View>
 
               <View style={[styles.rewardOrb, index === 0 && styles.rewardOrbFeatured]}>
-                <Text style={[styles.reward, index === 0 && styles.rewardFeatured]}>{mission.reward}</Text>
-                <Text style={[styles.unit, index === 0 && styles.unitFeatured]}>USDC</Text>
+                <Text style={styles.reward}>{mission.reward}</Text>
+                <Text style={styles.unit}>USDC</Text>
               </View>
             </Pressable>
           ))}
@@ -86,11 +103,12 @@ const styles = StyleSheet.create({
   iconButtonFeatured: { backgroundColor: '#111113' },
   cardCopy: { flex: 1 },
   cardTitle: { color: '#F4F4F4', fontSize: 13, lineHeight: 18, fontWeight: '800', maxWidth: 190 },
+  cardTitleFeatured: { color: '#111113' },
   cardMeta: { color: '#6D6D71', fontSize: 9, marginTop: 6 },
+  cardMetaFeatured: { color: 'rgba(0,0,0,0.55)' },
+  localBadge: { color: '#FF7A18', fontSize: 7, fontWeight: '900', letterSpacing: 0.6, marginTop: 6 },
   rewardOrb: { width: 56, height: 56, borderRadius: 20, backgroundColor: '#202023', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
   rewardOrbFeatured: { backgroundColor: '#111113' },
   reward: { color: '#FF7A18', fontSize: 17, fontWeight: '900', lineHeight: 19 },
-  rewardFeatured: { color: '#FF7A18' },
-  unit: { color: '#6C6C70', fontSize: 7, fontWeight: '900', marginTop: 2 },
-  unitFeatured: { color: '#A0A0A3' },
+  unit: { color: '#8A8A8E', fontSize: 7, fontWeight: '900', marginTop: 2 },
 })
