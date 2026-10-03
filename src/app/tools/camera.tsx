@@ -40,6 +40,7 @@ export default function LiveCameraScreen() {
     radius?: string
     mission?: string
     place?: string
+    reward?: string
   }>()
 
   const [permission, requestPermission] = useCameraPermissions()
@@ -56,6 +57,7 @@ export default function LiveCameraScreen() {
   const radius = Number(params.radius) || DEFAULT_RADIUS_METERS
   const mission = params.mission || 'Is the Web3 meetup live?'
   const place = params.place || 'Bodija, Ibadan'
+  const reward = params.reward || '3'
   const hasTarget = Number.isFinite(targetLat) && Number.isFinite(targetLon)
   const walletAddress = wallet.account?.address.toString()
 
@@ -99,14 +101,8 @@ export default function LiveCameraScreen() {
         return
       }
 
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.82,
-        exif: false,
-      })
-
-      if (!photo) {
-        throw new Error('The camera did not return a photo.')
-      }
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.82, exif: false })
+      if (!photo) throw new Error('The camera did not return a photo.')
 
       setProof({
         uri: photo.uri,
@@ -154,20 +150,36 @@ export default function LiveCameraScreen() {
     }
   }
 
+  function submitProof() {
+    if (!proof || !signature || !walletAddress) return
+
+    router.push({
+      pathname: '/tools/review',
+      params: {
+        mission,
+        place,
+        reward,
+        challenge,
+        photoUri: proof.uri,
+        capturedAt: proof.timestamp,
+        latitude: String(proof.latitude),
+        longitude: String(proof.longitude),
+        accuracy: String(proof.accuracy),
+        distance: String(proof.distance),
+        scout: walletAddress,
+        proofSignature: signature,
+      },
+    })
+  }
+
   if (!permission) {
-    return (
-      <View style={styles.centerScreen}>
-        <ActivityIndicator color="#FF6A00" />
-      </View>
-    )
+    return <View style={styles.centerScreen}><ActivityIndicator color="#FF6A00" /></View>
   }
 
   if (!permission.granted) {
     return (
       <View style={[styles.permissionScreen, { paddingTop: insets.top + 28, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.permissionIcon}>
-          <Ionicons color="#FF6A00" name="camera" size={30} />
-        </View>
+        <View style={styles.permissionIcon}><Ionicons color="#FF6A00" name="camera" size={30} /></View>
         <Text style={styles.permissionTitle}>Live camera required</Text>
         <Text style={styles.permissionText}>
           CrowdLens only accepts proof captured inside the app. Gallery uploads are not available for verification missions.
@@ -176,9 +188,7 @@ export default function LiveCameraScreen() {
           <Text style={styles.permissionButtonText}>Allow camera</Text>
           <Ionicons color="#0A0A0B" name="arrow-forward" size={18} />
         </Pressable>
-        <Pressable onPress={() => router.back()} style={styles.backTextButton}>
-          <Text style={styles.backText}>Go back</Text>
-        </Pressable>
+        <Pressable onPress={() => router.back()} style={styles.backTextButton}><Text style={styles.backText}>Go back</Text></Pressable>
       </View>
     )
   }
@@ -188,19 +198,16 @@ export default function LiveCameraScreen() {
       <View style={styles.screen}>
         <View style={[styles.reviewContent, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 18 }]}>
           <View style={styles.topBar}>
-            <Pressable onPress={() => setProof(null)} style={styles.iconButton}>
+            <Pressable onPress={() => { setProof(null); setSignature(null) }} style={styles.iconButton}>
               <Ionicons color="#FFFFFF" name="chevron-back" size={20} />
             </Pressable>
-            <Text style={styles.topTitle}>{signature ? 'Proof signed' : 'Review proof'}</Text>
+            <Text style={styles.topTitle}>{signature ? 'Proof ready' : 'Review proof'}</Text>
             <View style={styles.iconButtonGhost} />
           </View>
 
           <View style={styles.reviewImageWrap}>
             <Image source={{ uri: proof.uri }} style={styles.reviewImage} resizeMode="cover" />
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE CAPTURE</Text>
-            </View>
+            <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE CAPTURE</Text></View>
           </View>
 
           <View style={styles.metaCard}>
@@ -211,16 +218,20 @@ export default function LiveCameraScreen() {
           </View>
 
           {signature ? (
-            <View style={styles.signedCard}>
-              <View style={styles.signedIcon}>
-                <Ionicons color="#0A0A0B" name="checkmark" size={22} />
+            <>
+              <View style={styles.signedCard}>
+                <View style={styles.signedIcon}><Ionicons color="#0A0A0B" name="checkmark" size={22} /></View>
+                <View style={styles.signedCopy}>
+                  <Text style={styles.signedTitle}>Proof signed by wallet</Text>
+                  <Text style={styles.signedText} numberOfLines={1}>{walletAddress}</Text>
+                  <Text style={styles.signatureText} numberOfLines={1}>{signature}</Text>
+                </View>
               </View>
-              <View style={styles.signedCopy}>
-                <Text style={styles.signedTitle}>Proof signed by wallet</Text>
-                <Text style={styles.signedText} numberOfLines={1}>{walletAddress}</Text>
-                <Text style={styles.signatureText} numberOfLines={1}>{signature}</Text>
-              </View>
-            </View>
+              <Pressable onPress={submitProof} style={[styles.primaryButton, styles.submitButton]}>
+                <Text style={styles.primaryButtonText}>Submit proof</Text>
+                <Ionicons color="#0A0A0B" name="arrow-forward" size={19} />
+              </Pressable>
+            </>
           ) : walletAddress ? (
             <Pressable onPress={() => void signProof()} disabled={signing} style={styles.primaryButton}>
               {signing ? <ActivityIndicator color="#0A0A0B" /> : <Ionicons color="#0A0A0B" name="finger-print" size={20} />}
@@ -234,12 +245,10 @@ export default function LiveCameraScreen() {
             </View>
           )}
 
-          {!signature && (
-            <Pressable onPress={() => setProof(null)} style={styles.secondaryButton}>
-              <Ionicons color="#A0A0A5" name="refresh" size={17} />
-              <Text style={styles.secondaryButtonText}>Retake photo</Text>
-            </Pressable>
-          )}
+          <Pressable onPress={() => { setProof(null); setSignature(null) }} style={styles.secondaryButton}>
+            <Ionicons color="#A0A0A5" name="refresh" size={17} />
+            <Text style={styles.secondaryButtonText}>Retake photo</Text>
+          </Pressable>
         </View>
       </View>
     )
@@ -247,23 +256,13 @@ export default function LiveCameraScreen() {
 
   return (
     <View style={styles.screen}>
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing={facing}
-        onCameraReady={() => setCameraReady(true)}
-      />
+      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} onCameraReady={() => setCameraReady(true)} />
       <View style={styles.cameraShade} pointerEvents="none" />
 
       <View style={[styles.cameraUi, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.topBarCamera}>
-          <Pressable onPress={() => router.back()} style={styles.cameraIconButton}>
-            <Ionicons color="#FFFFFF" name="close" size={22} />
-          </Pressable>
-          <View style={styles.securePill}>
-            <Ionicons color="#FF7A18" name="shield-checkmark" size={14} />
-            <Text style={styles.secureText}>LIVE PROOF</Text>
-          </View>
+          <Pressable onPress={() => router.back()} style={styles.cameraIconButton}><Ionicons color="#FFFFFF" name="close" size={22} /></Pressable>
+          <View style={styles.securePill}><Ionicons color="#FF7A18" name="shield-checkmark" size={14} /><Text style={styles.secureText}>LIVE PROOF</Text></View>
           <Pressable onPress={() => setFacing((value) => (value === 'back' ? 'front' : 'back'))} style={styles.cameraIconButton}>
             <Ionicons color="#FFFFFF" name="camera-reverse" size={20} />
           </Pressable>
@@ -272,10 +271,7 @@ export default function LiveCameraScreen() {
         <View style={styles.challengeCard}>
           <Text style={styles.challengeLabel}>CAPTURE CHALLENGE</Text>
           <Text style={styles.challengeText}>{challenge}</Text>
-          <View style={styles.challengeMetaRow}>
-            <Ionicons color="#FF7A18" name="location" size={14} />
-            <Text style={styles.challengeMeta}>{place} · inside {radius} m</Text>
-          </View>
+          <View style={styles.challengeMetaRow}><Ionicons color="#FF7A18" name="location" size={14} /><Text style={styles.challengeMeta}>{place} · inside {radius} m</Text></View>
         </View>
 
         <View style={styles.cameraBottom}>
@@ -295,10 +291,7 @@ function MetaRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap;
   return (
     <View style={styles.metaRow}>
       <View style={styles.metaIcon}><Ionicons color="#FF6A00" name={icon} size={16} /></View>
-      <View style={styles.metaCopy}>
-        <Text style={styles.metaLabel}>{label}</Text>
-        <Text style={styles.metaValue} numberOfLines={1}>{value}</Text>
-      </View>
+      <View style={styles.metaCopy}><Text style={styles.metaLabel}>{label}</Text><Text style={styles.metaValue} numberOfLines={1}>{value}</Text></View>
       <Ionicons color="#63D77A" name="checkmark-circle" size={17} />
     </View>
   )
@@ -309,9 +302,7 @@ function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number
   const toRadians = (value: number) => (value * Math.PI) / 180
   const dLat = toRadians(lat2 - lat1)
   const dLon = toRadians(lon2 - lon1)
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
   return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
@@ -346,26 +337,27 @@ const styles = StyleSheet.create({
   topTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   iconButton: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#171719', alignItems: 'center', justifyContent: 'center' },
   iconButtonGhost: { width: 40, height: 40 },
-  reviewImageWrap: { flex: 1, minHeight: 260, maxHeight: 390, borderRadius: 28, overflow: 'hidden', backgroundColor: '#151517', marginBottom: 12 },
+  reviewImageWrap: { flex: 1, minHeight: 240, maxHeight: 350, borderRadius: 28, overflow: 'hidden', backgroundColor: '#151517', marginBottom: 12 },
   reviewImage: { width: '100%', height: '100%' },
   liveBadge: { position: 'absolute', left: 14, top: 14, borderRadius: 13, backgroundColor: 'rgba(10,10,11,0.82)', paddingHorizontal: 10, height: 30, flexDirection: 'row', alignItems: 'center', gap: 6 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF6A00' },
   liveText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
   metaCard: { borderRadius: 22, backgroundColor: '#131315', paddingHorizontal: 14, marginBottom: 12 },
-  metaRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#202023' },
+  metaRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#202023' },
   metaIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: '#25160E', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   metaCopy: { flex: 1 },
   metaLabel: { color: '#69696E', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
   metaValue: { color: '#E7E7E9', fontSize: 10, fontWeight: '700', marginTop: 3, maxWidth: 220 },
   primaryButton: { height: 56, borderRadius: 19, backgroundColor: '#FF6A00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  submitButton: { marginTop: 10 },
   primaryButtonText: { color: '#0A0A0B', fontSize: 13, fontWeight: '900' },
-  secondaryButton: { height: 46, borderRadius: 16, backgroundColor: '#161618', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 9 },
+  secondaryButton: { height: 44, borderRadius: 16, backgroundColor: '#161618', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 9 },
   secondaryButtonText: { color: '#A0A0A5', fontSize: 11, fontWeight: '800' },
   walletCard: { borderRadius: 20, backgroundColor: '#141416', padding: 14, gap: 10 },
   walletTitle: { color: '#F4F4F5', fontSize: 12, fontWeight: '800' },
   walletText: { color: '#6F6F74', fontSize: 10, lineHeight: 15 },
-  signedCard: { minHeight: 78, borderRadius: 21, backgroundColor: '#FF6A00', padding: 14, flexDirection: 'row', alignItems: 'center' },
-  signedIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#FFB173', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  signedCard: { minHeight: 74, borderRadius: 21, backgroundColor: '#FF6A00', padding: 13, flexDirection: 'row', alignItems: 'center' },
+  signedIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: '#FFB173', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   signedCopy: { flex: 1 },
   signedTitle: { color: '#0A0A0B', fontSize: 12, fontWeight: '900' },
   signedText: { color: '#3D210D', fontSize: 9, fontWeight: '700', marginTop: 4 },
