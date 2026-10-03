@@ -1,26 +1,84 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
+import * as Location from 'expo-location'
+import { router } from 'expo-router'
 import { useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { addMission } from '@/features/missions/data-access/mission-store'
 
 export default function CreateMissionScreen() {
   const insets = useSafeAreaInsets()
   const [question, setQuestion] = useState('')
-  const [location, setLocation] = useState('')
+  const [locationName, setLocationName] = useState('')
   const [reward, setReward] = useState('')
   const [radius, setRadius] = useState('50 m')
+  const [pin, setPin] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null)
+  const [pinning, setPinning] = useState(false)
 
-  function previewMission() {
-    if (!question.trim() || !location.trim() || !reward.trim()) {
-      Alert.alert('Add the basics', 'Mission, location and reward are required.')
+  async function pinCurrentLocation() {
+    if (pinning) return
+    setPinning(true)
+
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync()
+      if (permission.status !== 'granted') {
+        Alert.alert('Location required', 'Allow precise location so CrowdLens can pin the mission point.')
+        return
+      }
+
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
+      setPin({
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        accuracy: current.coords.accuracy ?? 0,
+      })
+    } catch (error) {
+      Alert.alert('Could not pin location', error instanceof Error ? error.message : 'Try again.')
+    } finally {
+      setPinning(false)
+    }
+  }
+
+  function publishMission() {
+    const amount = Number(reward)
+
+    if (!question.trim() || !locationName.trim() || !Number.isFinite(amount) || amount <= 0) {
+      Alert.alert('Add the basics', 'Mission, location and a valid reward are required.')
       return
     }
-    Alert.alert('Mission ready', `${question}\n${location} · ${radius}\n${reward} test USDC`)
+
+    if (!pin) {
+      Alert.alert('Pin the mission point', 'Use your current GPS location for this hackathon build before publishing.')
+      return
+    }
+
+    addMission({
+      title: question.trim(),
+      place: locationName.trim(),
+      reward: amount,
+      radius: Number.parseInt(radius, 10),
+      targetLat: pin.latitude,
+      targetLon: pin.longitude,
+    })
+
+    setQuestion('')
+    setLocationName('')
+    setReward('')
+    setPin(null)
+
+    Alert.alert('Mission published', 'It is now available in Missions on this device.', [
+      { text: 'View missions', onPress: () => router.replace('/tools') },
+    ])
   }
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.kicker}>NEW REQUEST</Text>
         <Text style={styles.title}>Create mission</Text>
 
@@ -36,11 +94,31 @@ export default function CreateMissionScreen() {
           />
         </View>
 
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>Location name</Text>
         <View style={styles.field}>
           <View style={styles.fieldIcon}><Ionicons color="#FF7A18" name="location-outline" size={18} /></View>
-          <TextInput onChangeText={setLocation} placeholder="Search a place" placeholderTextColor="#626266" style={styles.flexInput} value={location} />
+          <TextInput
+            onChangeText={setLocationName}
+            placeholder="e.g. Conference Centre, Ibadan"
+            placeholderTextColor="#626266"
+            style={styles.flexInput}
+            value={locationName}
+          />
         </View>
+
+        <Pressable onPress={() => void pinCurrentLocation()} style={[styles.pinButton, pin && styles.pinButtonDone]}>
+          {pinning ? (
+            <ActivityIndicator color="#FF7A18" />
+          ) : (
+            <Ionicons color={pin ? '#0C0C0D' : '#FF7A18'} name={pin ? 'checkmark' : 'locate'} size={18} />
+          )}
+          <View style={styles.pinCopy}>
+            <Text style={[styles.pinTitle, pin && styles.pinTitleDone]}>{pin ? 'Mission point pinned' : 'Pin current GPS location'}</Text>
+            <Text style={[styles.pinText, pin && styles.pinTextDone]}>
+              {pin ? `±${Math.round(pin.accuracy)} m accuracy` : 'Used as the centre of the verification zone'}
+            </Text>
+          </View>
+        </Pressable>
 
         <View style={styles.radiusHeader}>
           <Text style={styles.labelNoMargin}>Radius</Text>
@@ -68,13 +146,15 @@ export default function CreateMissionScreen() {
         <View style={styles.field}>
           <View style={styles.tokenBadge}><Text style={styles.tokenText}>USDC</Text></View>
           <TextInput keyboardType="decimal-pad" onChangeText={setReward} placeholder="3.00" placeholderTextColor="#626266" style={styles.flexInput} value={reward} />
-          <Text style={styles.devnet}>DEVNET</Text>
+          <Text style={styles.devnet}>TEST</Text>
         </View>
 
-        <Pressable onPress={previewMission} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Continue</Text>
+        <Pressable onPress={publishMission} style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>Publish mission</Text>
           <View style={styles.arrowButton}><Ionicons color="#FF7A18" name="arrow-forward" size={17} /></View>
         </Pressable>
+
+        <Text style={styles.note}>Hackathon build: newly created missions are stored locally on this device.</Text>
       </ScrollView>
     </View>
   )
@@ -93,6 +173,13 @@ const styles = StyleSheet.create({
   field: { minHeight: 56, borderRadius: 20, backgroundColor: '#151517', borderWidth: 1, borderColor: '#252528', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, elevation: 6, shadowColor: '#000', shadowOpacity: 0.24, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
   fieldIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: '#24160F', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   flexInput: { flex: 1, color: '#FFFFFF', fontSize: 13 },
+  pinButton: { minHeight: 66, borderRadius: 20, marginTop: 10, backgroundColor: '#151517', borderWidth: 1, borderColor: '#2A2A2D', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  pinButtonDone: { backgroundColor: '#F36B08', borderColor: '#F36B08' },
+  pinCopy: { flex: 1 },
+  pinTitle: { color: '#EAEAEA', fontSize: 11, fontWeight: '800' },
+  pinText: { color: '#66666A', fontSize: 9, marginTop: 3 },
+  pinTitleDone: { color: '#111111' },
+  pinTextDone: { color: 'rgba(0,0,0,0.56)' },
   radiusHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 9 },
   hint: { color: '#5D5D61', fontSize: 9 },
   segmentWrap: { flexDirection: 'row', backgroundColor: '#151517', borderRadius: 19, padding: 5, borderWidth: 1, borderColor: '#252528' },
@@ -112,4 +199,5 @@ const styles = StyleSheet.create({
   primaryButton: { marginTop: 26, minHeight: 58, borderRadius: 21, backgroundColor: '#F36B08', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 21, paddingRight: 7, elevation: 10, shadowColor: '#FF6A00', shadowOpacity: 0.18, shadowRadius: 15, shadowOffset: { width: 0, height: 8 } },
   primaryButtonText: { color: '#111111', fontSize: 13, fontWeight: '900' },
   arrowButton: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center' },
+  note: { color: '#57575B', fontSize: 8, textAlign: 'center', marginTop: 12 },
 })
