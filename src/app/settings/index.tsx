@@ -12,27 +12,18 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Profile</Text>
-            <Text style={styles.subtitle}>Your scout identity.</Text>
-          </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>FO</Text>
-          </View>
-        </View>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]} showsVerticalScrollIndicator={false}>
+        <Text style={styles.kicker}>SCOUT</Text>
+        <Text style={styles.title}>Profile</Text>
 
-        <View style={styles.identityCard}>
-          <View>
+        <View style={styles.orangeIdentity}>
+          <View style={styles.avatar}><Text style={styles.avatarText}>FO</Text></View>
+          <View style={styles.identityCopy}>
             <Text style={styles.name}>Faith Oluwalana</Text>
             <Text style={styles.role}>CrowdLens Scout</Text>
           </View>
-          <View style={styles.score}>
-            <Ionicons color="#FF6413" name="shield-checkmark" size={14} />
+          <View style={styles.scoreOrb}>
+            <Ionicons color="#FF7A18" name="shield-checkmark" size={17} />
             <Text style={styles.scoreText}>92</Text>
           </View>
         </View>
@@ -46,21 +37,15 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Wallet</Text>
         <View style={styles.walletCard}>
           <View style={styles.walletTop}>
-            <View style={styles.walletIcon}>
-              <Ionicons color="#FF6413" name="wallet-outline" size={19} />
-            </View>
+            <View style={styles.walletIcon}><Ionicons color="#FF7A18" name="wallet-outline" size={21} /></View>
             <View style={styles.walletCopy}>
               <Text style={styles.walletTitle}>{address ? 'Connected' : 'Connect wallet'}</Text>
-              <Text numberOfLines={1} style={styles.walletText}>
-                {address ?? 'Needed for rewards and signatures.'}
-              </Text>
+              <Text numberOfLines={1} style={styles.walletText}>{address ?? 'Needed for rewards and proof signatures.'}</Text>
             </View>
           </View>
 
           {!address ? (
-            <WalletUiConnectButton connect={wallet.connect} size="lg">
-              Connect Wallet
-            </WalletUiConnectButton>
+            <WalletUiConnectButton connect={wallet.connect} size="lg">Connect Wallet</WalletUiConnectButton>
           ) : (
             <View style={styles.connectedRow}>
               <View style={styles.connectedDot} />
@@ -69,14 +54,13 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <View style={styles.simpleRow}>
-          <View style={styles.simpleIcon}>
-            <Ionicons color="#FF6413" name="location-outline" size={18} />
+        <View style={styles.proofCard}>
+          <View style={styles.proofIcon}><Ionicons color="#111111" name="location-outline" size={19} /></View>
+          <View style={styles.proofCopy}>
+            <Text style={styles.proofTitle}>Proof of Presence</Text>
+            <Text style={styles.proofText}>Location + live capture + wallet signature</Text>
           </View>
-          <View style={styles.simpleCopy}>
-            <Text style={styles.simpleTitle}>Proof of Presence</Text>
-            <Text style={styles.simpleText}>Location + live capture + wallet signature</Text>
-          </View>
+          <Ionicons color="#6F6F73" name="chevron-forward" size={17} />
         </View>
       </ScrollView>
     </View>
@@ -85,44 +69,46 @@ export default function ProfileScreen() {
 
 function Stat({ value, label, accent = false }: { value: string; label: string; accent?: boolean }) {
   return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, accent && styles.statAccent]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.stat, accent && styles.statAccentCard]}>
+      <Text style={[styles.statValue, accent && styles.statValueAccent]}>{value}</Text>
+      <Text style={[styles.statLabel, accent && styles.statLabelAccent]}>{label}</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0B0B0C' },
-  content: { paddingHorizontal: 20, paddingBottom: 30 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
-  title: { color: '#FFFFFF', fontSize: 27, fontWeight: '800', letterSpacing: -0.8 },
-  subtitle: { color: '#707070', fontSize: 12, marginTop: 5 },
-  avatar: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#25170F', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FF6413', fontSize: 12, fontWeight: '800' },
-  identityCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#151517', borderRadius: 20, padding: 17 },
-  name: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  role: { color: '#666666', fontSize: 10, marginTop: 4 },
-  score: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#2A190F', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7 },
-  scoreText: { color: '#FF6413', fontSize: 10, fontWeight: '800' },
-  statsRow: { flexDirection: 'row', gap: 9, marginTop: 10, marginBottom: 28 },
-  stat: { flex: 1, backgroundColor: '#141416', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  statValue: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-  statAccent: { color: '#FF6413' },
-  statLabel: { color: '#606060', fontSize: 9, marginTop: 4 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 10 },
-  walletCard: { backgroundColor: '#151517', borderRadius: 20, padding: 15, gap: 14, marginBottom: 14 },
+  screen: { flex: 1, backgroundColor: '#0C0C0D' },
+  content: { paddingHorizontal: 18, paddingBottom: 30 },
+  kicker: { color: '#FF7A18', fontSize: 9, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
+  title: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', letterSpacing: -0.9, marginBottom: 18 },
+  orangeIdentity: { minHeight: 94, backgroundColor: '#F36B08', borderRadius: 28, padding: 15, flexDirection: 'row', alignItems: 'center', elevation: 12, shadowColor: '#FF6A00', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 9 } },
+  avatar: { width: 58, height: 58, borderRadius: 21, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  avatarText: { color: '#FF7A18', fontSize: 15, fontWeight: '900' },
+  identityCopy: { flex: 1 },
+  name: { color: '#111111', fontSize: 16, fontWeight: '900' },
+  role: { color: 'rgba(0,0,0,0.56)', fontSize: 10, fontWeight: '700', marginTop: 4 },
+  scoreOrb: { width: 52, height: 52, borderRadius: 19, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center' },
+  scoreText: { color: '#FF7A18', fontSize: 9, fontWeight: '900', marginTop: 2 },
+  statsRow: { flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 25 },
+  stat: { flex: 1, minHeight: 72, borderRadius: 21, backgroundColor: '#151517', borderWidth: 1, borderColor: '#242427', alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 9, shadowOffset: { width: 0, height: 5 } },
+  statAccentCard: { backgroundColor: '#F36B08', borderColor: '#F36B08' },
+  statValue: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  statValueAccent: { color: '#111111' },
+  statLabel: { color: '#66666A', fontSize: 8, marginTop: 4, fontWeight: '700' },
+  statLabelAccent: { color: 'rgba(0,0,0,0.58)' },
+  sectionTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', marginBottom: 10 },
+  walletCard: { backgroundColor: '#151517', borderRadius: 24, borderWidth: 1, borderColor: '#242427', padding: 14, gap: 15, marginBottom: 12, elevation: 7, shadowColor: '#000', shadowOpacity: 0.24, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } },
   walletTop: { flexDirection: 'row', alignItems: 'center' },
-  walletIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#2A190F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  walletIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: '#24160F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   walletCopy: { flex: 1 },
-  walletTitle: { color: '#F0F0F0', fontSize: 12, fontWeight: '700' },
-  walletText: { color: '#666666', fontSize: 10, marginTop: 4 },
+  walletTitle: { color: '#F0F0F0', fontSize: 12, fontWeight: '800' },
+  walletText: { color: '#66666A', fontSize: 9, marginTop: 4 },
   connectedRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  connectedDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#64C875' },
-  connectedText: { color: '#7EB988', fontSize: 10, fontWeight: '700' },
-  simpleRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#141416', borderRadius: 18, padding: 15 },
-  simpleIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#20160F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
-  simpleCopy: { flex: 1 },
-  simpleTitle: { color: '#EAEAEA', fontSize: 12, fontWeight: '700' },
-  simpleText: { color: '#626262', fontSize: 9, marginTop: 4 },
+  connectedDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#63C978' },
+  connectedText: { color: '#83BD8E', fontSize: 10, fontWeight: '800' },
+  proofCard: { minHeight: 70, borderRadius: 22, backgroundColor: '#151517', borderWidth: 1, borderColor: '#242427', flexDirection: 'row', alignItems: 'center', padding: 11 },
+  proofIcon: { width: 46, height: 46, borderRadius: 17, backgroundColor: '#F36B08', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  proofCopy: { flex: 1 },
+  proofTitle: { color: '#F0F0F0', fontSize: 12, fontWeight: '800' },
+  proofText: { color: '#66666A', fontSize: 9, marginTop: 4 },
 })
