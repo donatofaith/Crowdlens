@@ -2,7 +2,7 @@
   "expo": {
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0A0B",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -18,7 +18,7 @@
     "ios": {
       "icon": "./assets/expo.icon"
     },
-    "name": "Crowdlens",
+    "name": "CrowdLens",
     "orientation": "portrait",
     "plugins": [
       [
@@ -49,14 +49,14 @@
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           },
-          "backgroundColor": "#208AEF"
+          "backgroundColor": "#0A0A0B"
         }
       ],
       "expo-status-bar"
     ],
     "scheme": "crowdlens",
     "slug": "crowdlens",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "web": {
       "favicon": "./assets/images/favicon.png",
       "output": "static"
