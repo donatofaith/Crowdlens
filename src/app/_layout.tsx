@@ -7,10 +7,10 @@ import { StatusBar } from 'expo-status-bar'
 import { AppProviders } from '@/features/core/data-access/app-providers'
 
 const COLORS = {
-  background: '#0B0B0C',
-  border: '#1B1B1D',
-  inactive: '#5F5F63',
-  orange: '#FF6200',
+  background: '#0C0C0D',
+  border: '#1E1E21',
+  inactive: '#626266',
+  orange: '#FF7A18',
 }
 
 export default function Layout() {
@@ -33,10 +33,10 @@ function AppTabs() {
         tabBarInactiveTintColor: COLORS.inactive,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: COLORS.background,
+          backgroundColor: '#111113',
           borderTopColor: COLORS.border,
-          height: 62,
-          paddingBottom: 7,
+          height: 64,
+          paddingBottom: 8,
           paddingTop: 8,
         },
       }}
@@ -44,8 +44,8 @@ function AppTabs() {
       <Tabs.Screen
         name="(wallet)"
         options={{
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons color={color} name={focused ? 'home' : 'home-outline'} size={focused ? size + 1 : size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons color={color} name={focused ? 'home' : 'home-outline'} size={focused ? 23 : 21} />
           ),
           title: 'Home',
         }}
@@ -53,8 +53,8 @@ function AppTabs() {
       <Tabs.Screen
         name="tools"
         options={{
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons color={color} name={focused ? 'compass' : 'compass-outline'} size={focused ? size + 1 : size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons color={color} name={focused ? 'compass' : 'compass-outline'} size={focused ? 23 : 21} />
           ),
           title: 'Missions',
         }}
@@ -62,8 +62,8 @@ function AppTabs() {
       <Tabs.Screen
         name="create"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons color={focused ? '#FFFFFF' : COLORS.orange} name={focused ? 'add-circle' : 'add-circle-outline'} size={31} />
+          tabBarIcon: () => (
+            <Ionicons color={COLORS.orange} name="add-circle" size={33} />
           ),
           title: 'Create',
         }}
@@ -71,8 +71,8 @@ function AppTabs() {
       <Tabs.Screen
         name="updates"
         options={{
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons color={color} name={focused ? 'pulse' : 'pulse-outline'} size={focused ? size + 1 : size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons color={color} name={focused ? 'pulse' : 'pulse-outline'} size={focused ? 23 : 21} />
           ),
           title: 'Activity',
         }}
@@ -80,8 +80,8 @@ function AppTabs() {
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons color={color} name={focused ? 'person' : 'person-outline'} size={focused ? size + 1 : size} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons color={color} name={focused ? 'person' : 'person-outline'} size={focused ? 23 : 21} />
           ),
           title: 'Profile',
         }}
