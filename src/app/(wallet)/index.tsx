@@ -1,7 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { router } from 'expo-router'
-import { useEffect, useRef } from 'react'
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function HomeScreen() {
@@ -9,343 +8,113 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
-          <View style={styles.mark}>
-            <View style={[styles.markBar, { height: 10 }]} />
-            <View style={[styles.markBar, { height: 18 }]} />
-            <View style={[styles.markBar, { height: 7 }]} />
+          <View>
+            <Text style={styles.kicker}>CROWDLENS</Text>
+            <Text style={styles.greeting}>Hi Faith</Text>
           </View>
-
           <Pressable onPress={() => router.push('/settings')} style={styles.avatar}>
             <Text style={styles.avatarText}>F</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.hello}>Hi Faith</Text>
-        <Text style={styles.subtitle}>3 missions are waiting nearby</Text>
-
-        <Pressable onPress={() => router.push('/tools')} style={styles.featuredCard}>
-          <View style={styles.featuredGlow} />
-          <RadarPulse />
-
-          <View style={styles.featuredCopy}>
-            <Text style={styles.featuredLabel}>LIVE CHECK</Text>
-            <Text style={styles.featuredTitle}>Is the Web3 meetup live?</Text>
-            <Text style={styles.featuredLocation}>Bodija, Ibadan · 1.2 km</Text>
-
-            <View style={styles.featuredFooter}>
-              <View style={styles.peopleRow}>
-                <View style={[styles.person, styles.personOne]}>
-                  <Text style={styles.personText}>A</Text>
-                </View>
-                <View style={[styles.person, styles.personTwo]}>
-                  <Text style={styles.personText}>K</Text>
-                </View>
-              </View>
-              <Text style={styles.reward}>3 USDC</Text>
+        <View style={styles.orangePanel}>
+          <View style={styles.panelTop}>
+            <View>
+              <Text style={styles.panelSmall}>NEARBY NOW</Text>
+              <Text style={styles.panelNumber}>3</Text>
+              <Text style={styles.panelLabel}>missions waiting</Text>
             </View>
+            <View style={styles.radarButton}>
+              <View style={styles.radarInner}>
+                <Ionicons color="#FF7A18" name="radio-outline" size={26} />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.quickRow}>
+            <Quick icon="navigate-outline" label="Nearby" onPress={() => router.push('/tools')} />
+            <Quick icon="add" label="Create" onPress={() => router.push('/create')} />
+            <Quick icon="pulse-outline" label="Active" onPress={() => router.push('/updates')} />
+            <Quick icon="wallet-outline" label="Wallet" onPress={() => router.push('/settings')} />
+          </View>
+        </View>
+
+        <View style={styles.searchPill}>
+          <Ionicons color="#FF7A18" name="search" size={18} />
+          <Text style={styles.searchText}>Search missions or places</Text>
+          <View style={styles.filterButton}>
+            <Ionicons color="#D8D8D8" name="options-outline" size={17} />
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Closest mission</Text>
+        <Pressable onPress={() => router.push('/tools')} style={styles.missionCard}>
+          <View style={styles.cardIcon}>
+            <Ionicons color="#FF7A18" name="radio-outline" size={22} />
+          </View>
+          <View style={styles.cardCopy}>
+            <Text style={styles.cardTitle}>Is the Web3 meetup live?</Text>
+            <Text style={styles.cardMeta}>Bodija · 1.2 km away</Text>
+          </View>
+          <View style={styles.rewardButton}>
+            <Text style={styles.reward}>3</Text>
+            <Text style={styles.rewardUnit}>USDC</Text>
           </View>
         </Pressable>
 
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Nearby</Text>
-          <Pressable onPress={() => router.push('/create')} style={styles.createButton}>
-            <Ionicons color="#0B0B0B" name="add" size={22} />
-          </Pressable>
-        </View>
-
-        <View style={styles.grid}>
-          <Pressable onPress={() => router.push('/tools')} style={[styles.tile, styles.tallTile]}>
-            <View style={styles.tileIcon}>
-              <Ionicons color="#FF6200" name="location-outline" size={19} />
-            </View>
-            <View>
-              <Text style={styles.tileValue}>4</Text>
-              <Text style={styles.tileLabel}>Nearby</Text>
-            </View>
-          </Pressable>
-
-          <View style={styles.rightColumn}>
-            <Pressable onPress={() => router.push('/updates')} style={styles.tile}>
-              <Text style={styles.tileValue}>2</Text>
-              <Text style={styles.tileLabel}>Active</Text>
-            </Pressable>
-
-            <View style={[styles.tile, styles.orangeTile]}>
-              <Text style={[styles.tileValue, styles.orangeTileValue]}>18.4</Text>
-              <Text style={[styles.tileLabel, styles.orangeTileLabel]}>USDC earned</Text>
-            </View>
-          </View>
+        <View style={styles.quoteCard}>
+          <Ionicons color="#FF7A18" name="location-outline" size={18} />
+          <Text style={styles.quote}>Real-world proof, captured where it happens.</Text>
         </View>
       </ScrollView>
     </View>
   )
 }
 
-function RadarPulse() {
-  const pulse = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.timing(pulse, {
-        toValue: 1,
-        duration: 2200,
-        useNativeDriver: true,
-      }),
-    )
-    animation.start()
-    return () => animation.stop()
-  }, [pulse])
-
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1.55] })
-  const opacity = pulse.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.38, 0.12, 0] })
-
+function Quick({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
   return (
-    <View pointerEvents="none" style={styles.radarWrap}>
-      <Animated.View style={[styles.radarRing, { opacity, transform: [{ scale }] }]} />
-      <View style={styles.radarRingStatic} />
-      <View style={styles.radarDot} />
-    </View>
+    <Pressable onPress={onPress} style={styles.quickItem}>
+      <View style={styles.quickButton}>
+        <Ionicons color="#FF7A18" name={icon} size={18} />
+      </View>
+      <Text style={styles.quickLabel}>{label}</Text>
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0B0B0C',
-  },
-  content: {
-    paddingHorizontal: 18,
-    paddingBottom: 34,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 26,
-  },
-  mark: {
-    height: 24,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 4,
-    paddingTop: 2,
-  },
-  markBar: {
-    width: 3,
-    borderRadius: 3,
-    backgroundColor: '#A4A4A4',
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#171719',
-    borderWidth: 1,
-    borderColor: '#2B2B2D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FF6A00',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  hello: {
-    color: '#FFFFFF',
-    fontSize: 23,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-  },
-  subtitle: {
-    color: '#67676B',
-    fontSize: 12,
-    marginTop: 4,
-    marginBottom: 22,
-  },
-  featuredCard: {
-    minHeight: 150,
-    borderRadius: 19,
-    backgroundColor: '#171719',
-    overflow: 'hidden',
-    padding: 18,
-    justifyContent: 'center',
-    marginBottom: 26,
-    borderWidth: 1,
-    borderColor: '#202023',
-  },
-  featuredGlow: {
-    position: 'absolute',
-    right: -38,
-    top: -38,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#B84000',
-    opacity: 0.3,
-  },
-  featuredCopy: {
-    width: '72%',
-  },
-  featuredLabel: {
-    color: '#FF6A00',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1.1,
-    marginBottom: 8,
-  },
-  featuredTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '800',
-    letterSpacing: -0.35,
-  },
-  featuredLocation: {
-    color: '#707074',
-    fontSize: 10,
-    marginTop: 7,
-  },
-  featuredFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 17,
-  },
-  peopleRow: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  person: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#171719',
-  },
-  personOne: {
-    backgroundColor: '#6B5044',
-  },
-  personTwo: {
-    backgroundColor: '#4D5868',
-    marginLeft: -6,
-  },
-  personText: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: '800',
-  },
-  reward: {
-    color: '#A5A5A7',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  radarWrap: {
-    position: 'absolute',
-    right: 13,
-    top: 26,
-    width: 86,
-    height: 86,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radarRing: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#FF6A00',
-  },
-  radarRingStatic: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 1,
-    borderColor: 'rgba(255,106,0,0.35)',
-  },
-  radarDot: {
-    position: 'absolute',
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: '#FF6A00',
-    borderWidth: 2,
-    borderColor: '#24150C',
-  },
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 13,
-  },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  createButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    backgroundColor: '#FF6200',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  grid: {
-    flexDirection: 'row',
-    gap: 10,
-    minHeight: 178,
-  },
-  rightColumn: {
-    flex: 1,
-    gap: 10,
-  },
-  tile: {
-    flex: 1,
-    borderRadius: 18,
-    backgroundColor: '#171719',
-    borderWidth: 1,
-    borderColor: '#202023',
-    padding: 16,
-    justifyContent: 'space-between',
-  },
-  tallTile: {
-    flex: 1,
-  },
-  tileIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: '#24150D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orangeTile: {
-    backgroundColor: '#EF5B00',
-    borderColor: '#EF5B00',
-  },
-  tileValue: {
-    color: '#FFFFFF',
-    fontSize: 25,
-    fontWeight: '800',
-    letterSpacing: -0.7,
-  },
-  tileLabel: {
-    color: '#66666A',
-    fontSize: 10,
-    marginTop: 3,
-  },
-  orangeTileValue: {
-    color: '#FFFFFF',
-  },
-  orangeTileLabel: {
-    color: 'rgba(255,255,255,0.72)',
-  },
+  screen: { flex: 1, backgroundColor: '#0C0C0D' },
+  content: { paddingHorizontal: 18, paddingBottom: 28 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  kicker: { color: '#FF7A18', fontSize: 9, fontWeight: '900', letterSpacing: 1.6, marginBottom: 5 },
+  greeting: { color: '#FFFFFF', fontSize: 24, fontWeight: '800', letterSpacing: -0.7 },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#18181A', borderWidth: 1, borderColor: '#29292C', alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  avatarText: { color: '#FF7A18', fontWeight: '900', fontSize: 14 },
+  orangePanel: { backgroundColor: '#F36B08', borderRadius: 30, padding: 20, marginBottom: 18, elevation: 14, shadowColor: '#FF6A00', shadowOpacity: 0.22, shadowRadius: 22, shadowOffset: { width: 0, height: 12 } },
+  panelTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  panelSmall: { color: 'rgba(0,0,0,0.58)', fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  panelNumber: { color: '#111111', fontSize: 46, fontWeight: '900', lineHeight: 50, marginTop: 5 },
+  panelLabel: { color: 'rgba(0,0,0,0.66)', fontSize: 11, fontWeight: '700' },
+  radarButton: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center', elevation: 12, shadowColor: '#000', shadowOpacity: 0.34, shadowRadius: 15, shadowOffset: { width: 0, height: 8 } },
+  radarInner: { width: 66, height: 66, borderRadius: 33, borderWidth: 2, borderColor: '#FF7A18', alignItems: 'center', justifyContent: 'center', backgroundColor: '#171719' },
+  quickRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 22 },
+  quickItem: { alignItems: 'center', width: 64 },
+  quickButton: { width: 47, height: 47, borderRadius: 18, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2B2B2E', elevation: 8, shadowColor: '#000', shadowOpacity: 0.32, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } },
+  quickLabel: { color: '#1A1A1A', fontSize: 9, fontWeight: '800', marginTop: 7 },
+  searchPill: { height: 54, borderRadius: 18, backgroundColor: '#151517', borderWidth: 1, borderColor: '#242427', flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 7, marginBottom: 24, elevation: 6, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  searchText: { flex: 1, color: '#66666A', fontSize: 11, marginLeft: 10 },
+  filterButton: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#202023', alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', marginBottom: 11 },
+  missionCard: { minHeight: 88, borderRadius: 23, backgroundColor: '#151517', borderWidth: 1, borderColor: '#242427', flexDirection: 'row', alignItems: 'center', padding: 14, elevation: 8, shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 12, shadowOffset: { width: 0, height: 7 } },
+  cardIcon: { width: 48, height: 48, borderRadius: 17, backgroundColor: '#25160E', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  cardCopy: { flex: 1 },
+  cardTitle: { color: '#F4F4F4', fontSize: 13, fontWeight: '800' },
+  cardMeta: { color: '#66666A', fontSize: 10, marginTop: 5 },
+  rewardButton: { width: 58, height: 58, borderRadius: 20, backgroundColor: '#F36B08', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+  reward: { color: '#111111', fontSize: 18, fontWeight: '900', lineHeight: 20 },
+  rewardUnit: { color: 'rgba(0,0,0,0.62)', fontSize: 7, fontWeight: '900', marginTop: 2 },
+  quoteCard: { marginTop: 14, borderRadius: 19, backgroundColor: '#121214', flexDirection: 'row', alignItems: 'center', padding: 15, borderWidth: 1, borderColor: '#1D1D20' },
+  quote: { color: '#78787C', fontSize: 10, marginLeft: 9, flex: 1 },
 })
