@@ -14,36 +14,37 @@ export default function ActivityScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18 }]} showsVerticalScrollIndicator={false}>
+        <Text style={styles.kicker}>TRACKING</Text>
         <Text style={styles.title}>Activity</Text>
-        <Text style={styles.subtitle}>What changed recently.</Text>
 
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, styles.statActive]}>
-            <Text style={styles.statValue}>4</Text>
-            <Text style={styles.statLabel}>Active</Text>
+        <View style={styles.summaryPanel}>
+          <View style={styles.summaryBlock}>
+            <Text style={styles.summaryValue}>4</Text>
+            <Text style={styles.summaryLabel}>Active</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>2</Text>
-            <Text style={styles.statLabel}>Review</Text>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryBlock}>
+            <Text style={styles.summaryValue}>2</Text>
+            <Text style={styles.summaryLabel}>Review</Text>
+          </View>
+          <View style={styles.pulseOrb}>
+            <Ionicons color="#FF7A18" name="pulse" size={23} />
           </View>
         </View>
 
         <Text style={styles.sectionTitle}>Recent</Text>
-        <View style={styles.timeline}>
+        <View style={styles.list}>
           {activity.map((item, index) => (
             <View key={`${item.title}-${index}`} style={styles.item}>
               <View style={[styles.iconWrap, item.accent && styles.iconWrapAccent]}>
-                <Ionicons color={item.accent ? '#FF6413' : '#888888'} name={item.icon} size={18} />
+                <Ionicons color={item.accent ? '#111111' : '#FF7A18'} name={item.icon} size={18} />
               </View>
               <View style={styles.copy}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <Text style={styles.itemDetail}>{item.detail}</Text>
               </View>
-              <Text style={styles.time}>{item.time}</Text>
+              <View style={styles.timePill}><Text style={styles.time}>{item.time}</Text></View>
             </View>
           ))}
         </View>
@@ -53,22 +54,24 @@ export default function ActivityScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0B0B0C' },
-  content: { paddingHorizontal: 20, paddingBottom: 30 },
-  title: { color: '#FFFFFF', fontSize: 27, fontWeight: '800', letterSpacing: -0.8 },
-  subtitle: { color: '#707070', fontSize: 12, marginTop: 5 },
-  statsRow: { flexDirection: 'row', gap: 10, marginTop: 26, marginBottom: 30 },
-  statCard: { flex: 1, minHeight: 92, borderRadius: 18, backgroundColor: '#151517', padding: 16, justifyContent: 'center' },
-  statActive: { backgroundColor: '#25170F' },
-  statValue: { color: '#FFFFFF', fontSize: 25, fontWeight: '800' },
-  statLabel: { color: '#747474', fontSize: 10, marginTop: 5 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 10 },
-  timeline: { gap: 2 },
-  item: { minHeight: 72, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#18181A' },
-  iconWrap: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#171719', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  iconWrapAccent: { backgroundColor: '#2A190F' },
+  screen: { flex: 1, backgroundColor: '#0C0C0D' },
+  content: { paddingHorizontal: 18, paddingBottom: 30 },
+  kicker: { color: '#FF7A18', fontSize: 9, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
+  title: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', letterSpacing: -0.9 },
+  summaryPanel: { marginTop: 20, minHeight: 116, borderRadius: 28, backgroundColor: '#F36B08', flexDirection: 'row', alignItems: 'center', padding: 18, marginBottom: 26, elevation: 12, shadowColor: '#FF6A00', shadowOpacity: 0.2, shadowRadius: 18, shadowOffset: { width: 0, height: 9 } },
+  summaryBlock: { minWidth: 64 },
+  summaryValue: { color: '#111111', fontSize: 30, fontWeight: '900' },
+  summaryLabel: { color: 'rgba(0,0,0,0.58)', fontSize: 10, fontWeight: '800', marginTop: 2 },
+  summaryDivider: { width: 1, height: 46, backgroundColor: 'rgba(0,0,0,0.16)', marginHorizontal: 16 },
+  pulseOrb: { marginLeft: 'auto', width: 64, height: 64, borderRadius: 24, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 11, shadowOffset: { width: 0, height: 6 } },
+  sectionTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', marginBottom: 11 },
+  list: { gap: 11 },
+  item: { minHeight: 76, borderRadius: 22, backgroundColor: '#151517', borderWidth: 1, borderColor: '#242427', flexDirection: 'row', alignItems: 'center', padding: 11, elevation: 6, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 9, shadowOffset: { width: 0, height: 5 } },
+  iconWrap: { width: 46, height: 46, borderRadius: 17, backgroundColor: '#24160F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  iconWrapAccent: { backgroundColor: '#F36B08' },
   copy: { flex: 1 },
-  itemTitle: { color: '#EDEDED', fontSize: 12, fontWeight: '700' },
-  itemDetail: { color: '#666666', fontSize: 10, marginTop: 4 },
-  time: { color: '#555555', fontSize: 9, marginLeft: 10 },
+  itemTitle: { color: '#F0F0F0', fontSize: 12, fontWeight: '800' },
+  itemDetail: { color: '#66666A', fontSize: 9, marginTop: 4 },
+  timePill: { backgroundColor: '#202023', borderRadius: 11, paddingHorizontal: 8, paddingVertical: 6, marginLeft: 8 },
+  time: { color: '#7A7A7E', fontSize: 8, fontWeight: '800' },
 })
