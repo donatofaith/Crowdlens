@@ -36,6 +36,13 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow CrowdLens to use your camera to capture live mission proof.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "android": {
