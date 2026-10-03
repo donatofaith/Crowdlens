@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -37,7 +38,11 @@ export default function MissionsScreen() {
 
         <View style={styles.list}>
           {missions.map((mission, index) => (
-            <Pressable key={mission.title} style={[styles.card, index === 0 && styles.cardFeatured]}>
+            <Pressable
+              key={mission.title}
+              onPress={() => router.push('/tools/verify')}
+              style={[styles.card, index === 0 && styles.cardFeatured]}
+            >
               <View style={styles.cardLeft}>
                 <View style={[styles.iconButton, index === 0 && styles.iconButtonFeatured]}>
                   <Ionicons color={index === 0 ? '#111111' : '#FF7A18'} name={mission.icon} size={20} />
