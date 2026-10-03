@@ -30,6 +30,12 @@
       ],
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CrowdLens to use your precise location to verify that you are at a mission site."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "android": {
