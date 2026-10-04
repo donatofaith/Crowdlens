@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Location from 'expo-location'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { WalletUiConnectButton } from '@/features/wallet/ui/wallet-ui-connect-button'
@@ -174,13 +174,16 @@ export default function LiveCameraScreen() {
   if (!permission.granted) {
     return (
       <View style={[styles.permissionScreen, { paddingTop: insets.top + 28, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.permissionIcon}><Ionicons color="#FF6A00" name="camera" size={30} /></View>
-        <Text style={styles.permissionTitle}>Live camera required</Text>
-        <Text style={styles.permissionText}>CrowdLens only accepts proof captured inside the app. Gallery uploads are not available for verification missions.</Text>
-        <Pressable onPress={() => void requestPermission()} style={styles.permissionButton}>
-          <Text style={styles.permissionButtonText}>Allow camera</Text>
-          <Ionicons color="#0A0A0B" name="arrow-forward" size={18} />
-        </Pressable>
+        <View style={styles.permissionShell}>
+          <View style={styles.permissionIcon}><Ionicons color="#FF7A18" name="camera" size={30} /></View>
+          <Text style={styles.permissionKicker}>LIVE PROOF</Text>
+          <Text style={styles.permissionTitle}>Camera access</Text>
+          <Text style={styles.permissionText}>Proof must be captured inside CrowdLens. Gallery uploads are intentionally disabled.</Text>
+          <Pressable onPress={() => void requestPermission()} style={styles.permissionButton}>
+            <Text style={styles.permissionButtonText}>Allow camera</Text>
+            <View style={styles.permissionArrow}><Ionicons color="#FF7A18" name="arrow-forward" size={17} /></View>
+          </Pressable>
+        </View>
         <Pressable onPress={() => router.back()} style={styles.backTextButton}><Text style={styles.backText}>Go back</Text></Pressable>
       </View>
     )
@@ -189,60 +192,104 @@ export default function LiveCameraScreen() {
   if (proof) {
     return (
       <View style={styles.screen}>
-        <View style={[styles.reviewContent, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 18 }]}>
+        <ScrollView
+          contentContainerStyle={[styles.reviewContent, { paddingTop: insets.top + 14, paddingBottom: insets.bottom + 28 }]}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.topBar}>
             <Pressable onPress={() => { setProof(null); setSignature(null) }} style={styles.iconButton}>
               <Ionicons color="#FFFFFF" name="chevron-back" size={20} />
             </Pressable>
-            <Text style={styles.topTitle}>{signature ? 'Proof ready' : 'Review proof'}</Text>
+            <View style={styles.titleBlock}>
+              <Text style={styles.topKicker}>{signature ? 'SIGNED PROOF' : 'LIVE PROOF'}</Text>
+              <Text style={styles.topTitle}>{signature ? 'Ready to submit' : 'Review capture'}</Text>
+            </View>
             <View style={styles.iconButtonGhost} />
           </View>
 
-          <View style={styles.reviewImageWrap}>
-            <Image source={{ uri: proof.uri }} style={styles.reviewImage} resizeMode="cover" />
-            <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE CAPTURE</Text></View>
+          <View style={styles.missionStrip}>
+            <View style={styles.missionStripIcon}><Ionicons color="#0A0A0B" name="radio-outline" size={19} /></View>
+            <View style={styles.missionStripCopy}>
+              <Text style={styles.missionStripLabel}>MISSION</Text>
+              <Text style={styles.missionStripTitle} numberOfLines={1}>{mission}</Text>
+              <Text style={styles.missionStripMeta}>{place} · {reward} USDC</Text>
+            </View>
           </View>
 
-          <View style={styles.metaCard}>
-            <MetaRow icon="time-outline" label="Captured" value={new Date(proof.timestamp).toLocaleTimeString()} />
-            <MetaRow icon="location-outline" label="Coordinates" value={`${proof.latitude.toFixed(5)}, ${proof.longitude.toFixed(5)}`} />
-            <MetaRow icon="locate-outline" label="GPS" value={`±${Math.round(proof.accuracy)} m · ${Math.round(proof.distance)} m from mission`} />
-            <MetaRow icon="camera-outline" label="Source" value="CrowdLens camera" />
+          <View style={styles.photoFrame}>
+            <View style={styles.reviewImageWrap}>
+              <Image source={{ uri: proof.uri }} style={styles.reviewImage} resizeMode="cover" />
+              <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE CAPTURE</Text></View>
+              <View style={styles.verifiedBadge}><Ionicons color="#0A0A0B" name="checkmark" size={14} /><Text style={styles.verifiedBadgeText}>GPS VERIFIED</Text></View>
+            </View>
+          </View>
+
+          <View style={styles.metricRow}>
+            <MetricTile icon="locate-outline" label="Accuracy" value={`±${Math.round(proof.accuracy)} m`} />
+            <MetricTile icon="navigate-outline" label="Distance" value={`${Math.round(proof.distance)} m`} />
+            <MetricTile icon="camera-outline" label="Source" value="Live" />
+          </View>
+
+          <View style={styles.coordinateCard}>
+            <View style={styles.coordinateIcon}><Ionicons color="#FF7A18" name="location-outline" size={19} /></View>
+            <View style={styles.coordinateCopy}>
+              <Text style={styles.coordinateLabel}>CAPTURE POINT</Text>
+              <Text style={styles.coordinateValue}>{proof.latitude.toFixed(5)}, {proof.longitude.toFixed(5)}</Text>
+              <Text style={styles.coordinateTime}>{new Date(proof.timestamp).toLocaleTimeString()}</Text>
+            </View>
+            <View style={styles.coordinateCheck}><Ionicons color="#0A0A0B" name="checkmark" size={15} /></View>
           </View>
 
           {signature ? (
             <>
               <View style={styles.signedCard}>
-                <View style={styles.signedIcon}><Ionicons color="#0A0A0B" name="checkmark" size={22} /></View>
+                <View style={styles.signedIcon}><Ionicons color="#FF7A18" name="finger-print" size={22} /></View>
                 <View style={styles.signedCopy}>
-                  <Text style={styles.signedTitle}>Proof signed by wallet</Text>
+                  <Text style={styles.signedLabel}>WALLET SIGNED</Text>
+                  <Text style={styles.signedTitle}>Proof identity locked</Text>
                   <Text style={styles.signedText} numberOfLines={1}>{walletAddress}</Text>
-                  <Text style={styles.signatureText} numberOfLines={1}>{signature}</Text>
                 </View>
+                <Ionicons color="#0A0A0B" name="checkmark-circle" size={27} />
               </View>
-              <Pressable onPress={submitProof} style={[styles.primaryButton, styles.submitButton]}>
+              <Pressable onPress={submitProof} style={styles.primaryButton}>
                 <Text style={styles.primaryButtonText}>Submit proof</Text>
-                <Ionicons color="#0A0A0B" name="arrow-forward" size={19} />
+                <View style={styles.primaryArrow}><Ionicons color="#FF7A18" name="arrow-forward" size={18} /></View>
               </Pressable>
             </>
           ) : walletAddress ? (
-            <Pressable onPress={() => void signProof()} disabled={signing} style={styles.primaryButton}>
-              {signing ? <ActivityIndicator color="#0A0A0B" /> : <Ionicons color="#0A0A0B" name="finger-print" size={20} />}
-              <Text style={styles.primaryButtonText}>{signing ? 'Signing…' : 'Sign this proof'}</Text>
-            </Pressable>
+            <View style={styles.actionPanel}>
+              <View style={styles.actionPanelTop}>
+                <View style={styles.actionPanelIcon}><Ionicons color="#FF7A18" name="finger-print-outline" size={21} /></View>
+                <View style={styles.actionPanelCopy}>
+                  <Text style={styles.actionPanelLabel}>FINAL STEP</Text>
+                  <Text style={styles.actionPanelTitle}>Sign this proof</Text>
+                  <Text style={styles.actionPanelText}>Link this capture to your connected Solana wallet.</Text>
+                </View>
+              </View>
+              <Pressable onPress={() => void signProof()} disabled={signing} style={styles.signButton}>
+                {signing ? <ActivityIndicator color="#0A0A0B" /> : <Ionicons color="#0A0A0B" name="finger-print" size={19} />}
+                <Text style={styles.signButtonText}>{signing ? 'Signing…' : 'Sign proof'}</Text>
+              </Pressable>
+            </View>
           ) : (
             <View style={styles.walletCard}>
-              <Text style={styles.walletTitle}>Connect wallet to sign</Text>
-              <Text style={styles.walletText}>Your wallet signature links this proof to the scout who submitted it.</Text>
-              <WalletUiConnectButton connect={wallet.connect} size="lg">Connect Wallet</WalletUiConnectButton>
+              <View style={styles.walletHeader}>
+                <View style={styles.walletIcon}><Ionicons color="#FF7A18" name="wallet-outline" size={21} /></View>
+                <View style={styles.walletCopy}>
+                  <Text style={styles.walletLabel}>PROOF IDENTITY</Text>
+                  <Text style={styles.walletTitle}>Connect wallet</Text>
+                  <Text style={styles.walletText}>Your signature ties this proof to the scout who captured it.</Text>
+                </View>
+              </View>
+              <WalletUiConnectButton connect={wallet.connect} size="lg">Connect Solana wallet</WalletUiConnectButton>
             </View>
           )}
 
           <Pressable onPress={() => { setProof(null); setSignature(null) }} style={styles.secondaryButton}>
-            <Ionicons color="#A0A0A5" name="refresh" size={17} />
+            <Ionicons color="#8D8D92" name="refresh" size={17} />
             <Text style={styles.secondaryButtonText}>Retake photo</Text>
           </Pressable>
-        </View>
+        </ScrollView>
       </View>
     )
   }
@@ -262,13 +309,14 @@ export default function LiveCameraScreen() {
         </View>
 
         <View style={styles.challengeCard}>
+          <View style={styles.challengeOrb}><Ionicons color="#FF7A18" name="eye-outline" size={22} /></View>
           <Text style={styles.challengeLabel}>CAPTURE CHALLENGE</Text>
           <Text style={styles.challengeText}>{challenge}</Text>
-          <View style={styles.challengeMetaRow}><Ionicons color="#FF7A18" name="location" size={14} /><Text style={styles.challengeMeta}>{place} · inside {radius} m</Text></View>
+          <View style={styles.challengeMetaRow}><Ionicons color="#63310F" name="location" size={14} /><Text style={styles.challengeMeta}>{place} · inside {radius} m</Text></View>
         </View>
 
         <View style={styles.cameraBottom}>
-          <Text style={styles.captureHint}>GPS will be checked again when you press the shutter.</Text>
+          <View style={styles.captureHintPill}><Ionicons color="#FF7A18" name="locate-outline" size={14} /><Text style={styles.captureHint}>GPS re-checks when you shoot</Text></View>
           <Pressable onPress={() => void captureLiveProof()} disabled={!cameraReady || capturing} style={styles.shutterOuter}>
             <View style={styles.shutterInner}>
               {capturing ? <ActivityIndicator color="#0A0A0B" /> : <Ionicons color="#0A0A0B" name="camera" size={24} />}
@@ -280,12 +328,12 @@ export default function LiveCameraScreen() {
   )
 }
 
-function MetaRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
+function MetricTile({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
   return (
-    <View style={styles.metaRow}>
-      <View style={styles.metaIcon}><Ionicons color="#FF6A00" name={icon} size={16} /></View>
-      <View style={styles.metaCopy}><Text style={styles.metaLabel}>{label}</Text><Text style={styles.metaValue} numberOfLines={1}>{value}</Text></View>
-      <Ionicons color="#63D77A" name="checkmark-circle" size={17} />
+    <View style={styles.metricTile}>
+      <View style={styles.metricIcon}><Ionicons color="#FF7A18" name={icon} size={16} /></View>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
     </View>
   )
 }
@@ -302,57 +350,92 @@ function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#080809' },
   centerScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#080809' },
-  permissionScreen: { flex: 1, backgroundColor: '#0A0A0B', paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
-  permissionIcon: { width: 74, height: 74, borderRadius: 26, backgroundColor: '#24150D', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  permissionTitle: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -0.6 },
-  permissionText: { color: '#77777C', fontSize: 12, lineHeight: 19, textAlign: 'center', marginTop: 9, marginBottom: 24, maxWidth: 310 },
-  permissionButton: { height: 56, width: '100%', borderRadius: 19, backgroundColor: '#FF6A00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  permissionScreen: { flex: 1, backgroundColor: '#080809', paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center' },
+  permissionShell: { width: '100%', borderRadius: 30, backgroundColor: '#111113', padding: 20, borderWidth: 1, borderColor: '#28282B', elevation: 10, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 9 } },
+  permissionIcon: { width: 62, height: 62, borderRadius: 22, backgroundColor: '#24160F', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  permissionKicker: { color: '#FF7A18', fontSize: 8, fontWeight: '900', letterSpacing: 1.4 },
+  permissionTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: '900', letterSpacing: -0.6, marginTop: 5 },
+  permissionText: { color: '#747478', fontSize: 11, lineHeight: 18, marginTop: 8, marginBottom: 20 },
+  permissionButton: { minHeight: 58, borderRadius: 21, backgroundColor: '#FF6A00', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 18, paddingRight: 7 },
   permissionButtonText: { color: '#0A0A0B', fontSize: 13, fontWeight: '900' },
+  permissionArrow: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center' },
   backTextButton: { padding: 16 },
   backText: { color: '#6D6D72', fontSize: 11, fontWeight: '700' },
-  cameraShade: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.12)' },
+  cameraShade: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.10)' },
   cameraUi: { flex: 1, justifyContent: 'space-between', paddingHorizontal: 18 },
   topBarCamera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cameraIconButton: { width: 44, height: 44, borderRadius: 17, backgroundColor: 'rgba(12,12,13,0.78)', alignItems: 'center', justifyContent: 'center' },
-  securePill: { height: 38, borderRadius: 15, backgroundColor: 'rgba(12,12,13,0.8)', paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  cameraIconButton: { width: 46, height: 46, borderRadius: 18, backgroundColor: 'rgba(9,9,10,0.82)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', elevation: 6 },
+  securePill: { height: 40, borderRadius: 16, backgroundColor: 'rgba(9,9,10,0.84)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1, borderColor: 'rgba(255,122,24,0.28)' },
   secureText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  challengeCard: { alignSelf: 'stretch', backgroundColor: 'rgba(10,10,11,0.84)', borderRadius: 23, padding: 17, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  challengeLabel: { color: '#FF7A18', fontSize: 8, fontWeight: '900', letterSpacing: 1.2, marginBottom: 7 },
-  challengeText: { color: '#FFFFFF', fontSize: 16, lineHeight: 21, fontWeight: '800', maxWidth: 300 },
-  challengeMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10 },
-  challengeMeta: { color: '#A2A2A7', fontSize: 10 },
+  challengeCard: { alignSelf: 'stretch', backgroundColor: '#F36B08', borderRadius: 28, padding: 18, elevation: 12, shadowColor: '#FF6A00', shadowOpacity: 0.26, shadowRadius: 20, shadowOffset: { width: 0, height: 10 } },
+  challengeOrb: { width: 48, height: 48, borderRadius: 18, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  challengeLabel: { color: '#562508', fontSize: 8, fontWeight: '900', letterSpacing: 1.2, marginBottom: 7 },
+  challengeText: { color: '#111113', fontSize: 18, lineHeight: 23, fontWeight: '900', maxWidth: 305 },
+  challengeMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
+  challengeMeta: { color: '#63310F', fontSize: 10, fontWeight: '700' },
   cameraBottom: { alignItems: 'center' },
-  captureHint: { color: 'rgba(255,255,255,0.72)', fontSize: 10, textAlign: 'center', marginBottom: 14 },
-  shutterOuter: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.22)' },
-  shutterInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF6A00', alignItems: 'center', justifyContent: 'center' },
-  reviewContent: { flex: 1, paddingHorizontal: 18 },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  topTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
-  iconButton: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#171719', alignItems: 'center', justifyContent: 'center' },
-  iconButtonGhost: { width: 40, height: 40 },
-  reviewImageWrap: { flex: 1, minHeight: 240, maxHeight: 350, borderRadius: 28, overflow: 'hidden', backgroundColor: '#151517', marginBottom: 12 },
+  captureHintPill: { height: 36, borderRadius: 14, backgroundColor: 'rgba(9,9,10,0.82)', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
+  captureHint: { color: '#D2D2D4', fontSize: 9, fontWeight: '700' },
+  shutterOuter: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.22)' },
+  shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#FF6A00', alignItems: 'center', justifyContent: 'center', elevation: 9, shadowColor: '#FF6A00', shadowOpacity: 0.35, shadowRadius: 10 },
+  reviewContent: { paddingHorizontal: 18 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  titleBlock: { alignItems: 'center' },
+  topKicker: { color: '#FF7A18', fontSize: 7, fontWeight: '900', letterSpacing: 1.2, marginBottom: 3 },
+  topTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  iconButton: { width: 44, height: 44, borderRadius: 17, backgroundColor: '#151517', borderWidth: 1, borderColor: '#252528', alignItems: 'center', justifyContent: 'center', elevation: 5 },
+  iconButtonGhost: { width: 44, height: 44 },
+  missionStrip: { minHeight: 82, borderRadius: 24, backgroundColor: '#F36B08', padding: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 12, elevation: 10, shadowColor: '#FF6A00', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 8 } },
+  missionStripIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: '#FFB06E', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  missionStripCopy: { flex: 1 },
+  missionStripLabel: { color: '#5A280A', fontSize: 7, fontWeight: '900', letterSpacing: 1 },
+  missionStripTitle: { color: '#111113', fontSize: 13, fontWeight: '900', marginTop: 3 },
+  missionStripMeta: { color: '#6C310D', fontSize: 9, fontWeight: '700', marginTop: 4 },
+  photoFrame: { borderRadius: 31, backgroundColor: '#F36B08', padding: 5, marginBottom: 12, elevation: 12, shadowColor: '#FF6A00', shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
+  reviewImageWrap: { height: 300, borderRadius: 27, overflow: 'hidden', backgroundColor: '#151517' },
   reviewImage: { width: '100%', height: '100%' },
-  liveBadge: { position: 'absolute', left: 14, top: 14, borderRadius: 13, backgroundColor: 'rgba(10,10,11,0.82)', paddingHorizontal: 10, height: 30, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  liveBadge: { position: 'absolute', left: 14, top: 14, borderRadius: 14, backgroundColor: 'rgba(10,10,11,0.84)', paddingHorizontal: 11, height: 32, flexDirection: 'row', alignItems: 'center', gap: 6 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF6A00' },
-  liveText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
-  metaCard: { borderRadius: 22, backgroundColor: '#131315', paddingHorizontal: 14, marginBottom: 12 },
-  metaRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#202023' },
-  metaIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: '#25160E', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  metaCopy: { flex: 1 },
-  metaLabel: { color: '#69696E', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
-  metaValue: { color: '#E7E7E9', fontSize: 10, fontWeight: '700', marginTop: 3, maxWidth: 220 },
-  primaryButton: { height: 54, borderRadius: 19, backgroundColor: '#FF6A00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 10 },
-  submitButton: { backgroundColor: '#FF7A18' },
-  primaryButtonText: { color: '#0A0A0B', fontSize: 13, fontWeight: '900' },
-  secondaryButton: { height: 44, borderRadius: 16, backgroundColor: '#161618', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 9 },
-  secondaryButtonText: { color: '#A0A0A5', fontSize: 11, fontWeight: '800' },
-  walletCard: { borderRadius: 20, backgroundColor: '#141416', padding: 14, gap: 10 },
-  walletTitle: { color: '#F4F4F5', fontSize: 12, fontWeight: '800' },
-  walletText: { color: '#6F6F74', fontSize: 10, lineHeight: 15 },
-  signedCard: { minHeight: 74, borderRadius: 21, backgroundColor: '#FF6A00', padding: 14, flexDirection: 'row', alignItems: 'center' },
-  signedIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#FFB173', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  liveText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
+  verifiedBadge: { position: 'absolute', right: 14, bottom: 14, height: 34, borderRadius: 14, backgroundColor: '#F36B08', paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  verifiedBadgeText: { color: '#0A0A0B', fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
+  metricRow: { flexDirection: 'row', gap: 9, marginBottom: 12 },
+  metricTile: { flex: 1, minHeight: 98, borderRadius: 21, backgroundColor: '#131315', borderWidth: 1, borderColor: '#242427', padding: 11, justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOpacity: 0.24, shadowRadius: 9, shadowOffset: { width: 0, height: 5 } },
+  metricIcon: { width: 32, height: 32, borderRadius: 12, backgroundColor: '#25160E', alignItems: 'center', justifyContent: 'center' },
+  metricLabel: { color: '#68686D', fontSize: 8, fontWeight: '800' },
+  metricValue: { color: '#F3F3F4', fontSize: 13, fontWeight: '900' },
+  coordinateCard: { minHeight: 76, borderRadius: 22, backgroundColor: '#131315', borderWidth: 1, borderColor: '#242427', padding: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  coordinateIcon: { width: 46, height: 46, borderRadius: 17, backgroundColor: '#25160E', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  coordinateCopy: { flex: 1 },
+  coordinateLabel: { color: '#66666A', fontSize: 7, fontWeight: '900', letterSpacing: 0.8 },
+  coordinateValue: { color: '#F1F1F2', fontSize: 11, fontWeight: '800', marginTop: 4 },
+  coordinateTime: { color: '#66666A', fontSize: 8, marginTop: 3 },
+  coordinateCheck: { width: 30, height: 30, borderRadius: 12, backgroundColor: '#63D77A', alignItems: 'center', justifyContent: 'center' },
+  walletCard: { borderRadius: 26, backgroundColor: '#111113', borderWidth: 1, borderColor: '#28282B', padding: 14, gap: 14, marginBottom: 10, elevation: 8, shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 12, shadowOffset: { width: 0, height: 7 } },
+  walletHeader: { flexDirection: 'row', alignItems: 'center' },
+  walletIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: '#24160F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  walletCopy: { flex: 1 },
+  walletLabel: { color: '#FF7A18', fontSize: 7, fontWeight: '900', letterSpacing: 1 },
+  walletTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', marginTop: 3 },
+  walletText: { color: '#6E6E73', fontSize: 9, lineHeight: 14, marginTop: 4 },
+  actionPanel: { borderRadius: 26, backgroundColor: '#111113', borderWidth: 1, borderColor: '#28282B', padding: 14, marginBottom: 10 },
+  actionPanelTop: { flexDirection: 'row', alignItems: 'center' },
+  actionPanelIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: '#24160F', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
+  actionPanelCopy: { flex: 1 },
+  actionPanelLabel: { color: '#FF7A18', fontSize: 7, fontWeight: '900', letterSpacing: 1 },
+  actionPanelTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', marginTop: 3 },
+  actionPanelText: { color: '#69696E', fontSize: 9, lineHeight: 14, marginTop: 3 },
+  signButton: { height: 54, borderRadius: 18, backgroundColor: '#F36B08', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14 },
+  signButtonText: { color: '#0A0A0B', fontSize: 12, fontWeight: '900' },
+  signedCard: { minHeight: 82, borderRadius: 24, backgroundColor: '#F36B08', padding: 13, flexDirection: 'row', alignItems: 'center', marginBottom: 10, elevation: 8, shadowColor: '#FF6A00', shadowOpacity: 0.18, shadowRadius: 12 },
+  signedIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   signedCopy: { flex: 1 },
-  signedTitle: { color: '#0A0A0B', fontSize: 12, fontWeight: '900' },
-  signedText: { color: '#3D210D', fontSize: 9, fontWeight: '700', marginTop: 4 },
-  signatureText: { color: '#67310B', fontSize: 8, marginTop: 3 },
+  signedLabel: { color: '#582708', fontSize: 7, fontWeight: '900', letterSpacing: 0.8 },
+  signedTitle: { color: '#0A0A0B', fontSize: 13, fontWeight: '900', marginTop: 3 },
+  signedText: { color: '#6A300D', fontSize: 8, fontWeight: '700', marginTop: 4 },
+  primaryButton: { minHeight: 58, borderRadius: 21, backgroundColor: '#F36B08', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 19, paddingRight: 7, elevation: 10, shadowColor: '#FF6A00', shadowOpacity: 0.18, shadowRadius: 15, shadowOffset: { width: 0, height: 8 } },
+  primaryButtonText: { color: '#0A0A0B', fontSize: 13, fontWeight: '900' },
+  primaryArrow: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#111113', alignItems: 'center', justifyContent: 'center' },
+  secondaryButton: { height: 48, borderRadius: 17, backgroundColor: '#141416', borderWidth: 1, borderColor: '#232326', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 9 },
+  secondaryButtonText: { color: '#8D8D92', fontSize: 10, fontWeight: '800' },
 })
