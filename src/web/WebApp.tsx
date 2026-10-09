@@ -27,14 +27,13 @@ export default function WebApp() {
   const [pin, setPin] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [walletAddress, setWalletAddress] = useState<string | null>(() => { const wallet = getPhantomWallet(); return wallet?.isConnected ? wallet.publicKey?.toString() ?? null : null })
   const [walletBusy, setWalletBusy] = useState(false)
   const [walletMessage, setWalletMessage] = useState('')
   const [signatureComplete, setSignatureComplete] = useState(false)
   useEffect(() => {
     const wallet = getPhantomWallet()
     if (!wallet) return
-    if (wallet.isConnected && wallet.publicKey) setWalletAddress(wallet.publicKey.toString())
     const disconnected = () => { setWalletAddress(null); setSignatureComplete(false) }
     const connected = () => setWalletAddress(wallet.publicKey?.toString() ?? null)
     wallet.on?.('disconnect', disconnected)
