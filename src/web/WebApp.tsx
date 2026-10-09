@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { compactAddress, encodeWebMessage, friendlyWalletMessage, getPhantomWallet } from './browser-wallet'
 import { DEFAULT_MISSIONS } from '../features/missions/data-access/mission-model'
 import { MISSION_RADII, sortMissions, validateMissionDraft, type MissionSort } from '../features/missions/data-access/mission-rules'
 import type { Mission as SharedMission } from '../features/missions/data-access/mission-model'
@@ -26,6 +27,55 @@ export default function WebApp() {
   const [pin, setPin] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [walletAddress, setWalletAddress] = useState<string | null>(() => { const wallet = getPhantomWallet(); return wallet?.isConnected ? wallet.publicKey?.toString() ?? null : null })
+  const [walletBusy, setWalletBusy] = useState(false)
+  const [walletMessage, setWalletMessage] = useState('')
+  const [signatureComplete, setSignatureComplete] = useState(false)
+  useEffect(() => {
+    const wallet = getPhantomWallet()
+    if (!wallet) return
+    const disconnected = () => { setWalletAddress(null); setSignatureComplete(false) }
+    const connected = () => setWalletAddress(wallet.publicKey?.toString() ?? null)
+    wallet.on?.('disconnect', disconnected)
+    wallet.on?.('connect', connected)
+    return () => { wallet.off?.('disconnect', disconnected); wallet.off?.('connect', connected) }
+  }, [])
+  async function connectWallet() {
+    const wallet = getPhantomWallet()
+    if (!wallet) { setWalletMessage('Phantom browser wallet was not detected. Open CrowdLens in a browser with Phantom installed.'); return }
+    setWalletBusy(true); setWalletMessage(''); setSignatureComplete(false)
+    try {
+      const result = await wallet.connect()
+      setWalletAddress(result.publicKey.toString())
+    } catch (error) { setWalletMessage(friendlyWalletMessage(error)) }
+    finally { setWalletBusy(false) }
+  }
+  async function disconnectWallet() {
+    const wallet = getPhantomWallet()
+    if (!wallet) { setWalletAddress(null); return }
+    setWalletBusy(true); setWalletMessage('')
+    try {
+      await wallet.disconnect()
+      setWalletAddress(null); setSignatureComplete(false)
+    } catch (error) { setWalletMessage(friendlyWalletMessage(error)) }
+    finally { setWalletBusy(false) }
+  }
+  async function testWalletSignature() {
+    const wallet = getPhantomWallet()
+    if (!wallet || !walletAddress || !wallet.signMessage) {
+      setWalletMessage('Connect a compatible Phantom wallet with message-signing support first.')
+      return
+    }
+    setWalletBusy(true); setWalletMessage(''); setSignatureComplete(false)
+    try {
+      const payload = ['CROWDLENS_BROWSER_WALLET_TEST_V1', 'Purpose: test message signing only', 'Network: no transaction submitted', 'Account: ' + walletAddress, 'Timestamp: ' + new Date().toISOString()].join('\\n')
+      const signed = await wallet.signMessage(encodeWebMessage(payload), 'utf8')
+      if (!signed.signature?.length) throw new Error('Wallet returned no signature.')
+      setSignatureComplete(true)
+      setWalletMessage('Test message signed. No transaction was sent and no reward was paid.')
+    } catch (error) { setWalletMessage(friendlyWalletMessage(error)) }
+    finally { setWalletBusy(false) }
+  }
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(missions.filter(m => m.local))) } catch {} }, [missions])
   const sorted = useMemo(() => sortMissions(missions, filter), [missions, filter])
   const navigate = (next: Page) => { setSelected(null); setMessage(''); setPage(next) }
@@ -66,7 +116,7 @@ export default function WebApp() {
       page === 'missions' ? <><div className="eyebrow">DISCOVER</div><div className="section-head"><h1>Missions</h1><button className="primary small" onClick={() => navigate('create')}>+ Create mission</button></div><div className="filters">{['Nearby','Reward','New'].map(x => <button key={x} className={filter===x?'chosen':''} onClick={() => setFilter(x as MissionSort)}>{x}</button>)}</div><div className="missions">{sorted.map(tile)}</div></> :
       page === 'create' ? <><div className="eyebrow">NEW REQUEST</div><h1>Create mission</h1><div className="native-create-form"><label className="native-question">What do you need checked?<textarea value={question} onChange={e => setQuestion(e.target.value)} placeholder="Is the event happening right now?" /></label><label className="native-field-label">Location name<input value={place} onChange={e => setPlace(e.target.value)} placeholder="e.g. Conference Centre, Ibadan"/></label><button className={'native-pin '+(pin?'pinned':'')} onClick={pinLocation} disabled={busy}><span>◎</span><span><strong>{busy ? 'Finding your location…' : pin ? 'Mission point pinned' : 'Pin current GPS location'}</strong><small>{pin ? '±' + Math.round(pin.accuracy) + ' m accuracy' : 'Used as the centre of the verification zone'}</small></span></button><div className="native-form-section"><strong>Radius</strong><small>Scout must be inside</small></div><div className="native-radius">{MISSION_RADII.map(n => <button key={n} className={radius===n?'chosen':''} onClick={() => setRadius(n)}>{n} m</button>)}</div><div className="native-form-section"><strong>Proof</strong></div><div className="native-proof"><span>▣</span><div><strong>Live photo + GPS</strong><small>Captured inside CrowdLens Android</small></div><span>✓</span></div><label className="native-field-label">Reward <span className="native-reward"><strong>USDC</strong><input type="number" min="0.01" step="0.01" value={reward} onChange={e => setReward(e.target.value)} placeholder="3.00"/><em>TEST</em></span></label>{message && <p role="alert" className="feedback">{message}</p>}<button className="native-publish" onClick={publish}>Publish mission <span>→</span></button><p className="native-form-note">Hackathon preview: missions are stored in this browser. Cross-device syncing is not yet enabled.</p></div></> :
       page === 'activity' ? <><div className="eyebrow">TRACKING</div><h1>Activity</h1><div className="panel"><h3>No verified activity yet</h3><p>Your browser missions are saved locally. Live proof submissions and approval receipts are available only in the Android experience for this hackathon preview.</p><button className="primary" onClick={() => navigate('missions')}>Explore missions →</button></div></> :
-      <><div className="eyebrow">SCOUT</div><h1>Profile</h1><div className="panel"><h3>Solana wallet</h3><p>Mobile Wallet Adapter and wallet-signed Proof of Presence are available through the CrowdLens Android APK. Web wallet support is not connected in this preview.</p><button className="primary" onClick={() => navigate('missions')}>Explore missions →</button></div></>}
+      <><div className="eyebrow">SCOUT</div><h1>Profile</h1><div className="web-profile-banner"><div className="web-profile-avatar">FO</div><div><strong>Scout profile</strong><small>CrowdLens web preview</small></div><span>◎</span></div><div className="panel web-wallet-panel"><h3>Solana wallet</h3><p>{walletAddress ? 'Your Phantom wallet is connected in this browser.' : 'Connect a Phantom browser wallet to test wallet authorization. Android continues using Mobile Wallet Adapter.'}</p>{walletAddress && <div className="web-wallet-address"><span className="online-dot"/> Connected · <code title={walletAddress}>{compactAddress(walletAddress)}</code></div>}<div className="web-wallet-actions">{!walletAddress ? <button className="primary" onClick={() => void connectWallet()} disabled={walletBusy}>{walletBusy ? 'Connecting…' : 'Connect Phantom wallet'}</button> : <><button className="primary" onClick={() => void testWalletSignature()} disabled={walletBusy}>{walletBusy ? 'Waiting for wallet…' : 'Sign test message'}</button><button className="secondary-action" onClick={() => void disconnectWallet()} disabled={walletBusy}>Disconnect</button></>}</div>{walletMessage && <p role="status" className={signatureComplete ? 'web-wallet-success' : 'web-wallet-feedback'}>{walletMessage}</p>}<small className="web-wallet-disclaimer">Signing a test message is not Proof of Presence, a Devnet receipt, or a payment. Never enter your recovery phrase into CrowdLens.</small></div></>}
       <footer className="footer">CrowdLens · Hackathon web preview · Demo rewards are simulated · Android remains the verified proof experience.</footer>
       </div>
     </main>
