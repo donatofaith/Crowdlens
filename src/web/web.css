@@ -124,3 +124,14 @@ body{overflow:hidden}
 .web-review-status{color:#ff964e;font-weight:900;font-size:13px;padding:5px}
 .web-review-card .capture-controls{margin-bottom:0}
 @media(max-width:760px){.web-review-heading{align-items:start}.web-review-card{padding:12px}.web-review-heading .secondary-action{padding:11px}}
+
+
+/* Shared cloud workspace (shown only when the user opens Profile). */
+.cloud-workspace{margin-top:16px}
+.cloud-workspace label{display:grid;gap:8px;margin:15px 0;font-size:13px;font-weight:800}
+.cloud-workspace input{background:#101013;color:#fff;border:1px solid #414148;border-radius:14px;padding:14px;font:inherit;outline:none;width:100%}
+.cloud-workspace input:focus{border-color:#ff7a18}
+.cloud-workspace .capture-controls{margin:16px 0}
+.cloud-workspace .capture-controls button:disabled{opacity:.65;cursor:not-allowed}
+.cloud-status{font-size:12px!important;color:#ffad75!important}
+.native-publish:disabled{opacity:.7;cursor:wait}
