@@ -84,6 +84,6 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
       </>
     )}
     {status && <p role="status" className="cloud-status">{status}</p>}
-    <small className="web-wallet-disclaimer">Cloud sign-in tokens are kept only in this browser tab's memory and expire. Proof submissions and payments are not enabled by this panel.</small>
+    <small className="web-wallet-disclaimer">Cloud sign-in tokens are kept only in this browser tab memory and expire. Proof submissions and payments are not enabled by this panel.</small>
   </section>
 }
