@@ -27,3 +27,6 @@ jobs:
 
       - name: Lint
         run: npm run lint:check
+
+      - name: Web export
+        run: npm run build:web
