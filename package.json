@@ -15,7 +15,8 @@
     "lint": "expo lint --fix",
     "lint:check": "expo lint",
     "start": "expo start",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:web": "expo export --platform web"
   },
   "displayName": "CrowdLens",
   "description": "Android-first Solana Mobile app for requesting and submitting live, location-verified real-world proof.",
