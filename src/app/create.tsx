@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { addMission } from '@/features/missions/data-access/mission-store'
+import { MISSION_RADII, validateMissionDraft } from '@/features/missions/data-access/mission-rules'
 
 export default function CreateMissionScreen() {
   const insets = useSafeAreaInsets()
@@ -43,24 +44,26 @@ export default function CreateMissionScreen() {
   function publishMission() {
     const amount = Number(reward)
 
-    if (!question.trim() || !locationName.trim() || !Number.isFinite(amount) || amount <= 0) {
-      Alert.alert('Add the basics', 'Mission, location and a valid reward are required.')
-      return
-    }
-
     if (!pin) {
-      Alert.alert('Pin the mission point', 'Use your current GPS location for this hackathon build before publishing.')
+      Alert.alert('Pin the mission point', 'Use your current GPS location before publishing.')
       return
     }
 
-    addMission({
+    const draft = {
       title: question.trim(),
       place: locationName.trim(),
       reward: amount,
       radius: Number.parseInt(radius, 10),
       targetLat: pin.latitude,
       targetLon: pin.longitude,
-    })
+    }
+    const error = validateMissionDraft(draft)
+    if (error) {
+      Alert.alert('Check mission details', error)
+      return
+    }
+
+    addMission(draft)
 
     setQuestion('')
     setLocationName('')
@@ -125,7 +128,7 @@ export default function CreateMissionScreen() {
           <Text style={styles.hint}>Scout must be inside</Text>
         </View>
         <View style={styles.segmentWrap}>
-          {['25 m', '50 m', '100 m'].map((item) => (
+          {MISSION_RADII.map((meters) => `${meters} m`).map((item) => (
             <Pressable key={item} onPress={() => setRadius(item)} style={[styles.segment, radius === item && styles.segmentActive]}>
               <Text style={[styles.segmentText, radius === item && styles.segmentTextActive]}>{item}</Text>
             </Pressable>
