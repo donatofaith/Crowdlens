@@ -43,7 +43,7 @@ Use **two different test user accounts**:
 7. Anonymous users cannot read missions, submissions, or storage objects.
 8. Neither person can view unrelated private photos.
 
-Additional work is required before a production deployment: authenticated UI wiring, token refresh/session handling, privacy/retention choices, Android cloud adapter, upload limits/rate controls, secure proof validation, and end-to-end device testing.
+The browser Profile now includes a cloud email-code sign-in panel, mission refresh, and cloud mission creation after authentication. This is inactive until Vercel variables are set and the migration is applied. Additional work is required before production: refreshable/persistent sessions, privacy/retention decisions, Android UI wiring, proof-upload UX, upload limits/rate controls, server-side proof checks, and end-to-end device testing.
 
 ## Important limitations
 
