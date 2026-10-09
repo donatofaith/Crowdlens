@@ -4,6 +4,7 @@ import type { Mission as SharedMission } from '../features/missions/data-access/
 
 type Mission = SharedMission & { local?: boolean }
 type Page = 'home' | 'missions' | 'create' | 'activity' | 'profile'
+const KEY = 'crowdlens:web-missions:v1'
 const seeds: Mission[] = DEFAULT_MISSIONS
 const NAV: { id: Page; icon: string; label: string }[] = [
   { id: 'home', icon: '⌂', label: 'Home' }, { id: 'missions', icon: '◉', label: 'Missions' }, { id: 'create', icon: '+', label: 'Create' }, { id: 'activity', icon: '◷', label: 'Activity' }, { id: 'profile', icon: '♙', label: 'Profile' },
