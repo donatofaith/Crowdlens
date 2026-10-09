@@ -12,3 +12,25 @@ body{overflow:hidden}
   .app-shell{height:100vh;height:100dvh;min-height:0}
   .main{height:100%;overflow-y:auto;padding-bottom:0}
 }
+
+
+/* Android Home visual language, presented responsively on web */
+.native-greeting{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.native-greeting h1{font-size:clamp(26px,3vw,38px);letter-spacing:-.7px;margin:4px 0}
+.native-avatar{width:46px;height:46px;border:1px solid #29292c;border-radius:50%;background:#18181a;color:#ff7a18;font-weight:900}
+.native-orange-panel{background:#f36b08;border-radius:30px;padding:24px;color:#111;box-shadow:0 12px 24px #ff6a002c}
+.native-panel-top{display:flex;align-items:center;justify-content:space-between}
+.native-small{font-size:10px;font-weight:900;letter-spacing:1.2px;color:#552a0d}
+.native-count{font-size:50px;line-height:1.2;font-weight:900}
+.native-count-caption{font-size:12px;font-weight:700;color:#713a17}
+.native-radar{width:96px;height:96px;display:grid;place-items:center;border-radius:50%;background:#111113;color:#ff7a18;font-size:52px}
+.native-radar>div{width:70px;height:70px;border:2px solid #ff7a18;border-radius:50%;display:grid;place-items:center}
+.native-quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:24px}
+.native-quick-actions button{display:grid;justify-items:center;gap:8px;background:transparent;color:#181818;font-size:11px;font-weight:900;padding:0}
+.native-quick-actions button span{display:grid;place-items:center;width:49px;height:49px;border-radius:17px;color:#ff7a18;background:#111113;font-size:24px}
+.native-search{display:flex;align-items:center;gap:12px;width:100%;height:58px;margin-top:22px;border:1px solid #27272a;border-radius:18px;background:#151517;color:#858589;padding:7px 9px 7px 18px;text-align:left;font-size:13px}
+.native-search>span:first-child{font-size:25px;color:#ff7a18}
+.native-options{margin-left:auto;background:#232327;border-radius:14px;padding:8px 13px;font-size:19px;color:#d1d1d4}
+.native-quote{margin-top:15px;background:#141416;border:1px solid #222225;border-radius:19px;padding:18px;color:#898990;font-size:12px;display:flex;gap:10px}
+.native-quote span{color:#ff7a18}
+@media(max-width:760px){.native-orange-panel{padding:20px}.native-radar{width:86px;height:86px}.native-radar>div{width:60px;height:60px}.native-quick-actions button{font-size:10px}.native-quick-actions button span{width:44px;height:44px}.native-greeting h1{font-size:26px}}
