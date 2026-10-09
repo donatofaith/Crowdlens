@@ -31,7 +31,7 @@
     "geolocation",
     "camera"
   ],
-  "main": "./index.js",
+  "main": "./index",
   "version": "0.1.0",
   "dependencies": {
     "@expo/metro-runtime": "~57.0.5",
