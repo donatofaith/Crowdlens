@@ -34,3 +34,39 @@ body{overflow:hidden}
 .native-quote{margin-top:15px;background:#141416;border:1px solid #222225;border-radius:19px;padding:18px;color:#898990;font-size:12px;display:flex;gap:10px}
 .native-quote span{color:#ff7a18}
 @media(max-width:760px){.native-orange-panel{padding:20px}.native-radar{width:86px;height:86px}.native-radar>div{width:60px;height:60px}.native-quick-actions button{font-size:10px}.native-quick-actions button span{width:44px;height:44px}.native-greeting h1{font-size:26px}}
+
+
+/* Match the neo-tactile Android Create screen */
+.native-create-form{max-width:650px;margin-top:22px;display:grid;gap:13px}
+.native-create-form label{display:grid;gap:10px;font-size:12px;font-weight:800;color:#e1e1e4}
+.native-create-form textarea,.native-create-form input{font:inherit;outline:none}
+.native-question{padding:19px;background:#f36b08;border-radius:27px;color:#111!important}
+.native-question textarea{width:100%;min-height:100px;resize:vertical;padding:15px;border:0;border-radius:18px;background:#ffffff30;color:#111;font-size:14px;font-weight:700}
+.native-question textarea::placeholder{color:#642c13}
+.native-field-label{margin-top:9px}
+.native-field-label>input,.native-reward{width:100%;border:1px solid #2d2d31;background:#171719;min-height:56px;border-radius:20px;padding:15px;color:#fff;font-size:14px}
+.native-pin{display:flex;align-items:center;gap:15px;text-align:left;padding:13px 17px;min-height:68px;border-radius:20px;background:#171719;border:1px solid #333338;color:#ff7a18}
+.native-pin>span:first-child{font-size:27px}
+.native-pin>span:last-child{display:grid;gap:5px}
+.native-pin strong{font-size:13px}
+.native-pin small{color:#85858e;font-size:11px}
+.native-pin.pinned{background:#f36b08;color:#111;border-color:#f36b08}
+.native-pin.pinned small{color:#572708}
+.native-form-section{display:flex;align-items:center;justify-content:space-between;margin-top:10px;color:#eee;font-size:12px}
+.native-form-section small{color:#72727a;font-size:11px}
+.native-radius{background:#171719;border:1px solid #2d2d31;border-radius:19px;padding:5px;display:flex;gap:5px}
+.native-radius button{flex:1;color:#808087;background:transparent;border-radius:14px;min-height:42px;font-size:12px;font-weight:900}
+.native-radius button.chosen{color:#111;background:#f36b08}
+.native-proof{display:flex;align-items:center;gap:13px;background:#171719;border:1px solid #2d2d31;padding:14px;border-radius:22px}
+.native-proof>span:first-child{background:#261a11;border-radius:16px;color:#ff7a18;font-size:24px;padding:10px}
+.native-proof>div{flex:1;display:grid;gap:6px}
+.native-proof strong{font-size:13px}
+.native-proof small{color:#888891;font-size:11px}
+.native-proof>span:last-child{display:grid;place-items:center;background:#f36b08;border-radius:50%;width:29px;height:29px;color:#111}
+.native-reward{display:flex;align-items:center;gap:12px;padding:8px 14px}
+.native-reward strong{font-size:12px;background:#262629;border-radius:12px;padding:10px}
+.native-reward input{min-width:0;flex:1;border:0;background:transparent;color:#fff;font-size:15px}
+.native-reward em{font-size:10px;color:#ff7a18;font-style:normal}
+.native-publish{display:flex;align-items:center;justify-content:space-between;background:#f36b08;color:#111;padding:7px 8px 7px 20px;min-height:60px;border-radius:20px;font-weight:900;margin-top:10px}
+.native-publish span{display:grid;place-items:center;width:45px;height:45px;border-radius:15px;background:#111113;color:#ff7a18;font-size:20px}
+.native-form-note{color:#77777e;font-size:11px;text-align:center;line-height:1.6;margin:0 0 18px}
