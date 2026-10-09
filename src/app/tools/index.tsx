@@ -6,18 +6,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { $missions } from '@/features/missions/data-access/mission-store'
+import { sortMissions, type MissionSort } from '@/features/missions/data-access/mission-rules'
 
 export default function MissionsScreen() {
   const insets = useSafeAreaInsets()
   const missions = useStore($missions)
-  const [filter, setFilter] = useState('Nearby')
+  const [filter, setFilter] = useState<MissionSort>('Nearby')
 
-  const visibleMissions = useMemo(() => {
-    const copy = [...missions]
-    if (filter === 'Reward') return copy.sort((a, b) => b.reward - a.reward)
-    if (filter === 'New') return copy.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-    return copy
-  }, [filter, missions])
+  const visibleMissions = useMemo(() => sortMissions(missions, filter), [filter, missions])
 
   function openMission(mission: (typeof visibleMissions)[number]) {
     router.push({
@@ -48,7 +44,7 @@ export default function MissionsScreen() {
 
         <View style={styles.segmentWrap}>
           {['Nearby', 'Reward', 'New'].map((item) => (
-            <Pressable key={item} onPress={() => setFilter(item)} style={[styles.segment, filter === item && styles.segmentActive]}>
+            <Pressable key={item} onPress={() => setFilter(item as MissionSort)} style={[styles.segment, filter === item && styles.segmentActive]}>
               <Text style={[styles.segmentText, filter === item && styles.segmentTextActive]}>{item}</Text>
             </Pressable>
           ))}
