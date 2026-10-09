@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Mission } from '../features/missions/data-access/mission-model'
+import type { BrowserEvidenceDraft } from './browser-demo-submissions'
 
 type LocationReading = { latitude: number; longitude: number; accuracy: number; distance: number; timestamp: string }
 type Evidence = { photo: string; reading: LocationReading }
-type Props = { mission: Mission; onBack(): void }
+type Props = { mission: Mission; onBack(): void; onQueueReview(draft: BrowserEvidenceDraft): void }
 
 function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const radius = 6371000
@@ -41,7 +42,7 @@ function readBrowserLocation(mission: Mission): Promise<LocationReading> {
   })
 }
 
-export default function BrowserCapture({ mission, onBack }: Props) {
+export default function BrowserCapture({ mission, onBack, onQueueReview }: Props) {
   const video = useRef<HTMLVideoElement>(null)
   const stream = useRef<MediaStream | null>(null)
   const [cameraStarted, setCameraStarted] = useState(false)
@@ -141,7 +142,7 @@ export default function BrowserCapture({ mission, onBack }: Props) {
       <p className="lead">{mission.title} · {mission.place}</p>
       <div className="capture-disclaimer" role="note">
         Browser location and camera readings are <strong>unverified preview evidence</strong>, not Android Proof of Presence.
-        This version does not upload photos, submit proofs, create transactions, or pay rewards.
+        You may add the captured photo to a temporary review demo on this device. Nothing is uploaded, verified or paid.
       </div>
       <div className="capture-frame">
         {evidence ? (
@@ -156,6 +157,7 @@ export default function BrowserCapture({ mission, onBack }: Props) {
         {cameraStarted && <button type="button" className="primary" onClick={() => void capture()} disabled={busy}>{busy ? 'Checking GPS…' : 'Capture photo + GPS'}</button>}
         {!evidence && <button type="button" className="secondary-action" onClick={() => void checkLocation()} disabled={busy}>{busy ? 'Checking…' : 'Check GPS location'}</button>}
         {evidence && <button type="button" className="secondary-action" onClick={reset}>Retake preview</button>}
+        {evidence && <button type="button" className="primary" onClick={() => onQueueReview({ missionId: mission.id, missionTitle: mission.title, place: mission.place, reward: mission.reward, photoDataUrl: evidence.photo, capturedAt: evidence.reading.timestamp, latitude: evidence.reading.latitude, longitude: evidence.reading.longitude, accuracyMeters: evidence.reading.accuracy, distanceMeters: evidence.reading.distance, radiusMeters: mission.radius })}>Add to review demo →</button>}
       </div>
       {error && <p className="capture-error" role="alert">{error}</p>}
       <div className="capture-summary">
@@ -166,7 +168,7 @@ export default function BrowserCapture({ mission, onBack }: Props) {
           <p>Browser-reported accuracy: ±{Math.round(location.accuracy)} m</p>
           <p>Reading time: {location.timestamp}</p>
         </>}
-        {evidence && <p className="capture-success">Photo captured in this browser session. No proof has been submitted or verified.</p>}
+        {evidence && <p className="capture-success">Photo captured in this browser session. You can send it to a temporary on-device demo review; no proof is verified or uploaded.</p>}
       </div>
     </section>
   )
