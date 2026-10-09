@@ -88,3 +88,21 @@ body{overflow:hidden}
 .web-wallet-feedback{color:#ffae7b!important;font-size:12px!important}
 .web-wallet-success{color:#8cdca2!important;font-size:12px!important}
 .web-wallet-disclaimer{display:block;color:#888892;font-size:11px;line-height:1.65}
+
+
+/* Browser capture is a preview: no submission, escrow or anti-spoof guarantees. */
+.browser-capture{max-width:720px}
+.browser-capture .lead{margin-bottom:14px}
+.capture-disclaimer{padding:16px 18px;background:#241d18;border:1px solid #694127;border-radius:17px;color:#e7be9b;font-size:12px;line-height:1.7;margin:16px 0}
+.capture-frame{aspect-ratio:4/3;max-height:460px;position:relative;background:#111113;border:1px solid #39393d;border-radius:25px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.capture-frame video,.capture-frame img{display:block;width:100%;height:100%;object-fit:contain}
+.camera-empty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:9px;background:#151517;color:#ff7a18;font-size:54px}
+.camera-empty span{font-size:13px;color:#85858b}
+.capture-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:17px 0}
+.capture-controls button:disabled{opacity:.6;cursor:wait}
+.capture-error{color:#ff9a86;font-size:13px;line-height:1.6}
+.capture-summary{background:#18181b;border:1px solid #2c2c30;border-radius:22px;padding:20px;margin:17px 0}
+.capture-summary h3{margin:0 0 10px;color:#fff;font-size:16px}
+.capture-summary p{margin:8px 0;color:#92929a;font-size:12px;line-height:1.6}
+.capture-summary .capture-success{color:#91d7a6}
+@media(max-width:760px){.capture-frame{aspect-ratio:3/4}.capture-controls button{flex:1}}
