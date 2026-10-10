@@ -178,7 +178,8 @@ export default function WebApp() {
       missionId: draft.missionId, photoPath: path, latitude: draft.latitude,
       longitude: draft.longitude, accuracy: draft.accuracyMeters, distance: draft.distanceMeters,
     })
-    await refreshCloudActivity()
+    setCloudSubmissions(await cloudClient.listSubmissions(activeSession))
+    setCloudActivityError('')
   }
   function queueBrowserDemo(draft: BrowserEvidenceDraft) {
     setSessionSubmissions((items) => [newBrowserDemoSubmission(draft), ...items])
