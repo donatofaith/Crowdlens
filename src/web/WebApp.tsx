@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import BrowserCapture from './BrowserCapture'
 import CloudWorkspace, { cloudClient } from './CloudWorkspace'
+import { persistCloudSession, readSavedCloudSession } from './cloud-session-storage'
 import type { CloudMission, CrowdLensSession } from '../features/cloud/crowdlens-cloud'
 import BrowserReviewSession from './BrowserReviewSession'
 import { newBrowserDemoSubmission, reviewBrowserDemoSubmission } from './browser-demo-submissions'
@@ -29,9 +30,24 @@ function initialMissions(): Mission[] {
 export default function WebApp() {
   const [page, setPage] = useState<Page>('home')
   const [missions, setMissions] = useState<Mission[]>(initialMissions)
-  const [cloudSession, setCloudSession] = useState<CrowdLensSession | null>(null)
+  const [cloudSession, setCloudSession] = useState<CrowdLensSession | null>(readSavedCloudSession)
   const [cloudMissions, setCloudMissions] = useState<Mission[]>([])
   const [authCallbackError, setAuthCallbackError] = useState('')
+  useEffect(() => { persistCloudSession(cloudSession) }, [cloudSession])
+  useEffect(() => {
+    if (!cloudClient || !cloudSession) return
+    const client = cloudClient
+    let active = true
+    const delay = Math.max(0, cloudSession.expiresAt - Date.now() - 60000)
+    const timer = window.setTimeout(() => {
+      void client.refreshSession(cloudSession).then((renewed) => {
+        if (active) setCloudSession(renewed)
+      }).catch(() => {
+        if (active) { setCloudSession(null); setCloudMissions([]); setAuthCallbackError('Your cloud session expired. Please sign in again.') }
+      })
+    }, delay)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [cloudSession])
   const [selected, setSelected] = useState<Mission | null>(null)
   const [capturePreview, setCapturePreview] = useState(false)
   const [sessionSubmissions, setSessionSubmissions] = useState<BrowserDemoSubmission[]>([])
@@ -117,6 +133,15 @@ export default function WebApp() {
   }
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(missions.filter(m => m.local))) } catch {} }, [missions])
   const shownMissions = useMemo(() => [...cloudMissions, ...missions], [cloudMissions, missions])
+  useEffect(() => {
+    if (!cloudClient || !cloudSession) return
+    let active = true
+    const client = cloudClient
+    void client.listMissions(cloudSession).then((rows) => {
+      if (active) setCloudMissions(rows.map(fromCloud))
+    }).catch(() => { /* CloudWorkspace exposes manual refresh and auth errors. */ })
+    return () => { active = false }
+  }, [cloudSession])
   const sorted = useMemo(() => sortMissions(shownMissions, filter), [shownMissions, filter])
   function queueBrowserDemo(draft: BrowserEvidenceDraft) {
     setSessionSubmissions((items) => [newBrowserDemoSubmission(draft), ...items])
@@ -174,7 +199,7 @@ export default function WebApp() {
       page === 'missions' ? <><div className="eyebrow">DISCOVER</div><div className="section-head"><h1>Missions</h1><button className="primary small" onClick={() => navigate('create')}>+ Create mission</button></div><div className="filters">{['Nearby','Reward','New'].map(x => <button key={x} className={filter===x?'chosen':''} onClick={() => setFilter(x as MissionSort)}>{x}</button>)}</div><div className="missions">{sorted.map(tile)}</div></> :
       page === 'create' ? <><div className="eyebrow">NEW REQUEST</div><h1>Create mission</h1><div className="native-create-form"><label className="native-question">What do you need checked?<textarea value={question} onChange={e => setQuestion(e.target.value)} placeholder="Is the event happening right now?" /></label><label className="native-field-label">Location name<input value={place} onChange={e => setPlace(e.target.value)} placeholder="e.g. Conference Centre, Ibadan"/></label><button className={'native-pin '+(pin?'pinned':'')} onClick={pinLocation} disabled={busy}><span>◎</span><span><strong>{busy ? 'Finding your location…' : pin ? 'Mission point pinned' : 'Pin current GPS location'}</strong><small>{pin ? '±' + Math.round(pin.accuracy) + ' m accuracy' : 'Used as the centre of the verification zone'}</small></span></button><div className="native-form-section"><strong>Radius</strong><small>Scout must be inside</small></div><div className="native-radius">{MISSION_RADII.map(n => <button key={n} className={radius===n?'chosen':''} onClick={() => setRadius(n)}>{n} m</button>)}</div><div className="native-form-section"><strong>Proof</strong></div><div className="native-proof"><span>▣</span><div><strong>Live photo + GPS</strong><small>Captured inside CrowdLens Android</small></div><span>✓</span></div><label className="native-field-label">Reward <span className="native-reward"><strong>USDC</strong><input type="number" min="0.01" step="0.01" value={reward} onChange={e => setReward(e.target.value)} placeholder="3.00"/><em>TEST</em></span></label>{message && <p role="alert" className="feedback">{message}</p>}<button className="native-publish" disabled={busy} onClick={() => void publish()}>{busy ? 'Publishing…' : cloudSession ? 'Publish shared mission' : 'Publish local mission'} <span>→</span></button><p className="native-form-note">{cloudSession ? 'Signed in: this mission will be saved to the shared database.' : 'Not signed into cloud: this mission will be saved only in this browser.'}</p></div></> :
       page === 'activity' ? <BrowserReviewSession submissions={sessionSubmissions} onDecision={decideBrowserDemo} onClear={() => setSessionSubmissions([])} onExplore={() => navigate('missions')} /> :
-      <><div className="eyebrow">SCOUT</div><h1>Profile</h1><div className="web-profile-banner"><div className="web-profile-avatar">FO</div><div><strong>Scout profile</strong><small>CrowdLens web preview</small></div><span>◎</span></div><div className="panel web-wallet-panel"><h3>Solana wallet</h3><p>{walletAddress ? 'Your Phantom wallet is connected in this browser.' : 'Connect a Phantom browser wallet to test wallet authorization. Android continues using Mobile Wallet Adapter.'}</p>{walletAddress && <div className="web-wallet-address"><span className="online-dot"/> Connected · <code title={walletAddress}>{compactAddress(walletAddress)}</code></div>}<div className="web-wallet-actions">{!walletAddress ? <button className="primary" onClick={() => void connectWallet()} disabled={walletBusy}>{walletBusy ? 'Connecting…' : 'Connect Phantom wallet'}</button> : <><button className="primary" onClick={() => void testWalletSignature()} disabled={walletBusy}>{walletBusy ? 'Waiting for wallet…' : 'Sign test message'}</button><button className="secondary-action" onClick={() => void disconnectWallet()} disabled={walletBusy}>Disconnect</button></>}</div>{walletMessage && <p role="status" className={signatureComplete ? 'web-wallet-success' : 'web-wallet-feedback'}>{walletMessage}</p>}<small className="web-wallet-disclaimer">Signing a test message is not Proof of Presence, a Devnet receipt, or a payment. Never enter your recovery phrase into CrowdLens.</small></div>{authCallbackError && <p role="alert" className="feedback">{authCallbackError}</p>}<CloudWorkspace session={cloudSession} onSession={(next) => { setCloudSession(next); if (!next) setCloudMissions([]) }} onMissions={(items) => setCloudMissions(items.map(fromCloud))} /></>}
+      <><div className="eyebrow">SCOUT</div><h1>Profile</h1><div className="web-profile-banner"><div className="web-profile-avatar">FO</div><div><strong>Scout profile</strong><small>CrowdLens web preview</small></div><span>◎</span></div><div className="panel web-wallet-panel"><h3>Solana wallet</h3><p>{walletAddress ? 'Your Phantom wallet is connected in this browser.' : 'Connect a Phantom browser wallet to test wallet authorization. Android continues using Mobile Wallet Adapter.'}</p>{walletAddress && <div className="web-wallet-address"><span className="online-dot"/> Connected · <code title={walletAddress}>{compactAddress(walletAddress)}</code></div>}<div className="web-wallet-actions">{!walletAddress ? <button className="primary" onClick={() => void connectWallet()} disabled={walletBusy}>{walletBusy ? 'Connecting…' : 'Connect Phantom wallet'}</button> : <><button className="primary" onClick={() => void testWalletSignature()} disabled={walletBusy}>{walletBusy ? 'Waiting for wallet…' : 'Sign test message'}</button><button className="secondary-action" onClick={() => void disconnectWallet()} disabled={walletBusy}>Disconnect</button></>}</div>{walletMessage && <p role="status" className={signatureComplete ? 'web-wallet-success' : 'web-wallet-feedback'}>{walletMessage}</p>}<small className="web-wallet-disclaimer">Signing a test message is not Proof of Presence, a Devnet receipt, or a payment. Never enter your recovery phrase into CrowdLens.</small></div>{authCallbackError && <p role="alert" className="feedback">{authCallbackError}</p>}<CloudWorkspace session={cloudSession} onSession={(next) => { setCloudSession(next); if (!next) setCloudMissions([]); setAuthCallbackError('') }} onMissions={(items) => setCloudMissions(items.map(fromCloud))} /></>}
       <footer className="footer">CrowdLens · Hackathon web preview · Demo rewards are simulated · Android remains the verified proof experience.</footer>
       </div>
     </main>
