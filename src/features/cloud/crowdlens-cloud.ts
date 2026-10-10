@@ -70,11 +70,28 @@ export function createCrowdLensCloud(config: CrowdLensCloudConfig) {
   if (!config.publishableKey) throw new Error('Supabase publishable key is required.')
 
   return {
-    async requestEmailCode(email: string): Promise<void> {
-      await request<unknown>(`${base}/auth/v1/otp`, {
+    async requestEmailCode(email: string, redirectTo?: string): Promise<void> {
+      const destination = redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : ''
+      await request<unknown>(`${base}/auth/v1/otp${destination}`, {
         method: 'POST', headers: configHeaders(config),
         body: JSON.stringify({ email, create_user: true }),
       })
+    },
+    async completeEmailLinkFromUrl(): Promise<CrowdLensSession | null> {
+      if (typeof window === 'undefined') return null
+      const fragment = new URLSearchParams(window.location.hash.slice(1))
+      const accessToken = fragment.get('access_token')
+      if (!accessToken) return null
+      // Clean tokens out of browser history as soon as they are read.
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      if (fragment.get('token_type') !== 'bearer') throw new Error('Unexpected email link token type.')
+      const user = await request<{ id: string }>(`${base}/auth/v1/user`, {
+        headers: configHeaders(config, accessToken),
+      })
+      if (!user.id) throw new Error('Email link did not return an authenticated user.')
+      const expiresSeconds = Number(fragment.get('expires_in') || '0')
+      if (!Number.isFinite(expiresSeconds) || expiresSeconds <= 0) throw new Error('Email link is expired.')
+      return { accessToken, userId: user.id, expiresAt: Date.now() + expiresSeconds * 1000 }
     },
     async verifyEmailCode(email: string, code: string): Promise<CrowdLensSession> {
       const body = await request<{

@@ -27,9 +27,9 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
     if (!cloudClient) return
     setWorking(true); setStatus('')
     try {
-      await cloudClient.requestEmailCode(email.trim())
+      await cloudClient.requestEmailCode(email.trim(), window.location.origin + window.location.pathname)
       setOtpSent(true)
-      setStatus('Email sent. Enter the one-time code from your inbox.')
+      setStatus('Check your inbox. If you receive a sign-in link, open it in this browser. If you receive a code, enter it below.')
     } catch (err) { setStatus(err instanceof Error ? err.message : 'Unable to send email code.') }
     finally { setWorking(false) }
   }
@@ -74,11 +74,11 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
       </>
     ) : (
       <>
-        <p>Use a one-time email code to sign in before sharing missions between devices. Wallet connection alone does not sign you into the database.</p>
+        <p>Sign in by email to share missions between devices. Supabase may email you a sign-in link or a one-time code. Wallet connection alone does not sign you into the database.</p>
         <label>Email address<input type="email" autoComplete="email" value={email} placeholder="you@example.com" onChange={(event) => setEmail(event.target.value)} /></label>
-        {otpSent && <label>One-time email code<input autoComplete="one-time-code" inputMode="numeric" value={code} placeholder="Enter the code" onChange={(event) => setCode(event.target.value)} /></label>}
+        {otpSent && <label>One-time email code (only if your email contains a code)<input autoComplete="one-time-code" inputMode="numeric" value={code} placeholder="Enter the code" onChange={(event) => setCode(event.target.value)} /></label>}
         <div className="capture-controls">
-          {!otpSent ? <button className="primary" disabled={working || !email.includes('@')} onClick={() => void sendCode()}>{working ? 'Sending…' : 'Send sign-in code'}</button> :
+          {!otpSent ? <button className="primary" disabled={working || !email.includes('@')} onClick={() => void sendCode()}>{working ? 'Sending…' : 'Send sign-in email'}</button> :
             <><button className="primary" disabled={working || !code.trim()} onClick={() => void verify()}>{working ? 'Signing in…' : 'Verify and connect'}</button><button className="secondary-action" onClick={() => { setOtpSent(false); setCode('') }}>Change email</button></>}
         </div>
       </>
