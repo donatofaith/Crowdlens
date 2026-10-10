@@ -47,11 +47,26 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
     finally { setWorking(false) }
   }
 
+  async function signOut() {
+    if (!session) return
+    setWorking(true); setStatus('')
+    try {
+      await cloudClient?.signOut(session)
+    } catch {
+      // Local sign-out must work even if Supabase is offline or the token expired.
+    } finally {
+      onSession(null); onMissions([]); setTotal(null)
+      setOtpSent(false); setCode('')
+      setStatus('Signed out on this device.')
+      setWorking(false)
+    }
+  }
+
   async function refresh() {
     if (!cloudClient || !session) return
     setWorking(true); setStatus('')
     try {
-      if (Date.now() >= session.expiresAt) throw new Error('Session expired. Sign in again.')
+      if (Date.now() >= session.expiresAt) throw new Error('Session renewal pending. Try again shortly.')
       const rows = await cloudClient.listMissions(session)
       onMissions(rows); setTotal(rows.length)
       setStatus('Missions refreshed from the shared database.')
@@ -69,7 +84,7 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
         <p><strong>Shared missions loaded:</strong> {total === null ? 'Not refreshed' : total}</p>
         <div className="capture-controls">
           <button className="primary" disabled={working} onClick={() => void refresh()}>{working ? 'Refreshing…' : 'Refresh shared missions'}</button>
-          <button className="secondary-action" onClick={() => { onSession(null); onMissions([]); setTotal(null); setStatus('Signed out of cloud workspace.') }}>Sign out</button>
+          <button className="secondary-action" disabled={working} onClick={() => void signOut()}>Sign out</button>
         </div>
       </>
     ) : (
@@ -84,6 +99,6 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
       </>
     )}
     {status && <p role="status" className="cloud-status">{status}</p>}
-    <small className="web-wallet-disclaimer">Cloud sign-in tokens are kept only in this browser tab memory and expire. Proof submissions and payments are not enabled by this panel.</small>
+    <small className="web-wallet-disclaimer">Cloud sign-in now persists on this browser and is renewed automatically while valid. Use Sign out on shared devices. Proof submissions are not yet connected to this workspace; test rewards are simulated, not payments.</small>
   </section>
 }
