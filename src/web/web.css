@@ -165,3 +165,26 @@ body{overflow:hidden}
 .devnet-transactions li{font-size:12px}
 .devnet-transactions a{color:#ff994d;text-decoration:underline}
 .devnet-transactions span{display:block;color:#92929b;margin-top:3px}
+
+
+/* Compact Profile: balance is prominent, technical tools are optional. */
+.web-profile-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.web-profile-section-title h3{margin:0}
+.web-profile-section-title span,.cloud-account-status{color:#a6d4af;font-size:12px;font-weight:700}
+.web-wallet-panel .devnet-inspector{margin-top:16px;padding:20px;border:1px solid #35353a;background:#18181b;border-radius:19px}
+.devnet-account-header{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.devnet-network{font-weight:850;color:#ff8c36;letter-spacing:.09em;font-size:11px}
+.devnet-inspector .devnet-balance{margin:10px 0 3px;padding:0;background:transparent;border:0;border-radius:0;color:#fff;font-size:clamp(22px,4vw,34px);font-weight:850;font-variant-numeric:tabular-nums;line-height:1.25}
+.devnet-inspector small{color:#9d9da7;font-size:11px}
+.devnet-refresh{border:1px solid #46464e;background:#252529;border-radius:14px;color:#fff;font-size:25px;min-width:43px;height:43px}
+.devnet-refresh:disabled{opacity:.5}
+.devnet-account-link{display:inline-block;margin:15px 0 5px;font-size:12px}
+.devnet-history,.web-profile-options{margin-top:15px;padding-top:14px;border-top:1px solid #38383e}
+.devnet-history summary,.web-profile-options summary{cursor:pointer;color:#c4c4ca;font-weight:750;font-size:13px}
+.devnet-history[open] summary,.web-profile-options[open] summary{color:#fff}
+.devnet-history .devnet-transactions{margin-bottom:0}
+.web-profile-options .web-wallet-actions{margin:14px 0}
+.web-wallet-panel>.web-wallet-address{margin-top:12px;background:transparent;padding:2px 0}
+.cloud-account-status{display:flex;align-items:center;gap:8px;margin-top:12px}
+.cloud-workspace>.web-wallet-disclaimer{margin-top:14px}
+.devnet-retry{border:0;background:transparent;color:#ffaf70;font-weight:800;text-decoration:underline;cursor:pointer}

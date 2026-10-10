@@ -1,50 +1,55 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   devnetExplorerAddress, devnetExplorerTransaction, inspectDevnetAccount,
   type DevnetAccount,
 } from './devnet-account'
 
-type Props = { address: string | null }
+type Props = { address: string }
 
 export default function DevnetWalletInspector({ address }: Props) {
   const [account, setAccount] = useState<DevnetAccount | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
+  const [reload, setReload] = useState(0)
 
-  async function refresh() {
-    if (!address) return
-    setBusy(true)
-    setError('')
-    try {
-      setAccount(await inspectDevnetAccount(address))
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Unable to contact Solana Devnet.')
-    } finally {
+  const refresh = useCallback(() => setReload((value) => value + 1), [])
+
+  useEffect(() => {
+    let active = true
+    void inspectDevnetAccount(address).then((result) => {
+      if (!active) return
+      setAccount(result)
+      setError('')
       setBusy(false)
-    }
-  }
+    }).catch((reason: unknown) => {
+      if (!active) return
+      setError(reason instanceof Error ? reason.message : 'Unable to contact Solana Devnet.')
+      setBusy(false)
+    })
+    return () => { active = false }
+  }, [address, reload])
 
-  return <section className="panel devnet-inspector">
-    <h3>Solana Devnet · Test balance and receipts</h3>
-    <p>View test SOL and recent Devnet transactions for the connected wallet. This is read-only: checking a balance never signs or sends a transaction.</p>
-    {address ? <>
-      <p>Connected wallet: <code>{address.slice(0, 6)}…{address.slice(-6)}</code></p>
-      <div className="capture-controls">
-        <button className="primary" type="button" disabled={busy} onClick={() => void refresh()}>{busy ? 'Checking Devnet…' : 'Check Devnet balance'}</button>
-        <a className="wallet-open-link" target="_blank" rel="noopener noreferrer" href={devnetExplorerAddress(address)}>View on Devnet Explorer ↗</a>
+  return <section className="devnet-inspector" aria-label="Connected wallet Devnet balance">
+    <div className="devnet-account-header">
+      <div>
+        <span className="devnet-network">SOLANA DEVNET</span>
+        <div className="devnet-balance" aria-live="polite">
+          {busy && !account ? 'Loading balance…' : account ? account.sol.toLocaleString(undefined, { maximumFractionDigits: 9 }) + ' SOL' : 'Balance unavailable'}
+        </div>
+        <small>Test SOL · No real monetary value</small>
       </div>
-      {account && <>
-        <div className="devnet-balance"><strong>{account.sol.toLocaleString(undefined, { maximumFractionDigits: 9 })} SOL</strong><small>DEVNET ONLY · No real monetary value</small></div>
-        <h4>Recent Devnet transactions</h4>
-        {account.transactions.length ? <ul className="devnet-transactions">
-          {account.transactions.map((tx) => <li key={tx.signature}>
-            <a href={devnetExplorerTransaction(tx.signature)} target="_blank" rel="noopener noreferrer">{tx.signature.slice(0, 12)}…{tx.signature.slice(-6)} ↗</a>
-            <span>{tx.err ? 'Failed' : 'Confirmed'} · {tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString() : 'Time unavailable'}</span>
-          </li>)}
-        </ul> : <p>No recent Devnet transactions found for this address.</p>}
-      </>}
-      {error && <p role="alert" className="feedback">{error}</p>}
-    </> : <p>Connect a supported Solana wallet above before checking Devnet. The network must be Devnet to sign a future Devnet transaction.</p>}
-    <small className="web-wallet-disclaimer">A Devnet SOL balance is not a CrowdLens reward balance. TEST USDC missions are simulated, and this panel never moves tokens.</small>
+      <button className="devnet-refresh" type="button" disabled={busy} onClick={() => { setBusy(true); refresh() }} aria-label="Refresh Devnet balance" title="Refresh Devnet balance">↻</button>
+    </div>
+    {error && <p role="alert" className="feedback">{error} <button type="button" className="devnet-retry" onClick={() => { setBusy(true); refresh() }}>Retry</button></p>}
+    <a className="wallet-open-link devnet-account-link" target="_blank" rel="noopener noreferrer" href={devnetExplorerAddress(address)}>View wallet on Devnet Explorer ↗</a>
+    {account && <details className="devnet-history">
+      <summary>Recent Devnet transactions ({account.transactions.length})</summary>
+      {account.transactions.length ? <ul className="devnet-transactions">
+        {account.transactions.map((tx) => <li key={tx.signature}>
+          <a href={devnetExplorerTransaction(tx.signature)} target="_blank" rel="noopener noreferrer">{tx.signature.slice(0, 12)}…{tx.signature.slice(-6)} ↗</a>
+          <span>{tx.err ? 'Failed' : 'Confirmed'} · {tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString() : 'Time unavailable'}</span>
+        </li>)}
+      </ul> : <p>No recent transactions for this wallet on Devnet.</p>}
+    </details>}
   </section>
 }

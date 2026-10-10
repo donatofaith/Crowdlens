@@ -75,17 +75,21 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
   }
 
   return <section className="cloud-workspace panel">
-    <h3>Shared CrowdLens workspace</h3>
+    <h3>CrowdLens account</h3>
     {!cloudClient ? (
       <p>Cloud sync is not configured yet. Add the Supabase project URL and public key in Vercel to activate sign-in and shared mission storage. The existing browser demo continues working locally.</p>
     ) : session ? (
       <>
-        <p>Authenticated cloud account connected. This account is separate from your Solana wallet.</p>
-        <p><strong>Shared missions loaded:</strong> {total === null ? 'Not refreshed' : total}</p>
-        <div className="capture-controls">
-          <button className="primary" disabled={working} onClick={() => void refresh()}>{working ? 'Refreshing…' : 'Refresh shared missions'}</button>
-          <button className="secondary-action" disabled={working} onClick={() => void signOut()}>Sign out</button>
-        </div>
+        <div className="cloud-account-status"><span className="online-dot"/> Signed in · Shared missions enabled</div>
+        <details className="web-profile-options">
+          <summary>Account options</summary>
+          <p>Your email sign-in is separate from your Solana wallet. This device remembers your account until you sign out.</p>
+          <div className="capture-controls">
+            <button className="secondary-action" disabled={working} onClick={() => void refresh()}>{working ? 'Refreshing…' : 'Refresh shared missions'}</button>
+            <button className="secondary-action" disabled={working} onClick={() => void signOut()}>Sign out</button>
+          </div>
+          {total !== null && <p>{total} shared missions loaded.</p>}
+        </details>
       </>
     ) : (
       <>
@@ -99,6 +103,6 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
       </>
     )}
     {status && <p role="status" className="cloud-status">{status}</p>}
-    <small className="web-wallet-disclaimer">Cloud sign-in now persists on this browser and is renewed automatically while valid. Use Sign out on shared devices. Private browser proof submissions and demo requester review are available for shared missions. Test rewards are simulated, not payments.</small>
+    <small className="web-wallet-disclaimer">Proof review is demo-only; no rewards are paid. Sign out on shared devices.</small>
   </section>
 }
