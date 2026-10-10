@@ -4,7 +4,7 @@ import type { BrowserEvidenceDraft } from './browser-demo-submissions'
 
 type LocationReading = { latitude: number; longitude: number; accuracy: number; distance: number; timestamp: string }
 type Evidence = { photo: string; reading: LocationReading }
-type Props = { mission: Mission; onBack(): void; onQueueReview(draft: BrowserEvidenceDraft): void }
+type Props = { mission: Mission; onBack(): void; onQueueReview(draft: BrowserEvidenceDraft): void; onSubmitCloud?: (draft: BrowserEvidenceDraft) => Promise<void> }
 
 function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const radius = 6371000
@@ -42,11 +42,13 @@ function readBrowserLocation(mission: Mission): Promise<LocationReading> {
   })
 }
 
-export default function BrowserCapture({ mission, onBack, onQueueReview }: Props) {
+export default function BrowserCapture({ mission, onBack, onQueueReview, onSubmitCloud }: Props) {
   const video = useRef<HTMLVideoElement>(null)
   const stream = useRef<MediaStream | null>(null)
   const [cameraStarted, setCameraStarted] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [location, setLocation] = useState<LocationReading | null>(null)
   const [evidence, setEvidence] = useState<Evidence | null>(null)
@@ -124,8 +126,17 @@ export default function BrowserCapture({ mission, onBack, onQueueReview }: Props
     }
   }
 
+  const draft = evidence ? { missionId: mission.id, missionTitle: mission.title, place: mission.place, reward: mission.reward, photoDataUrl: evidence.photo, capturedAt: evidence.reading.timestamp, latitude: evidence.reading.latitude, longitude: evidence.reading.longitude, accuracyMeters: evidence.reading.accuracy, distanceMeters: evidence.reading.distance, radiusMeters: mission.radius } : null
+  async function submitCloud() {
+    if (!draft || !onSubmitCloud) return
+    setSending(true); setError('')
+    try { await onSubmitCloud(draft); setSent(true) }
+    catch (error) { setError(error instanceof Error ? error.message : 'Could not submit cloud proof.') }
+    finally { setSending(false) }
+  }
   function reset() {
     setEvidence(null)
+    setSent(false)
     setLocation(null)
     setCameraStarted(false)
     setError('')
@@ -142,7 +153,7 @@ export default function BrowserCapture({ mission, onBack, onQueueReview }: Props
       <p className="lead">{mission.title} · {mission.place}</p>
       <div className="capture-disclaimer" role="note">
         Browser location and camera readings are <strong>unverified preview evidence</strong>, not Android Proof of Presence.
-        You may add the captured photo to a temporary review demo on this device. Nothing is uploaded, verified or paid.
+        You may add the captured photo to a local demo. If signed in and viewing a shared mission, you can separately choose to upload unverified evidence privately for requester review. No payment or presence verification is performed.
       </div>
       <div className="capture-frame">
         {evidence ? (
@@ -157,7 +168,8 @@ export default function BrowserCapture({ mission, onBack, onQueueReview }: Props
         {cameraStarted && <button type="button" className="primary" onClick={() => void capture()} disabled={busy}>{busy ? 'Checking GPS…' : 'Capture photo + GPS'}</button>}
         {!evidence && <button type="button" className="secondary-action" onClick={() => void checkLocation()} disabled={busy}>{busy ? 'Checking…' : 'Check GPS location'}</button>}
         {evidence && <button type="button" className="secondary-action" onClick={reset}>Retake preview</button>}
-        {evidence && <button type="button" className="primary" onClick={() => onQueueReview({ missionId: mission.id, missionTitle: mission.title, place: mission.place, reward: mission.reward, photoDataUrl: evidence.photo, capturedAt: evidence.reading.timestamp, latitude: evidence.reading.latitude, longitude: evidence.reading.longitude, accuracyMeters: evidence.reading.accuracy, distanceMeters: evidence.reading.distance, radiusMeters: mission.radius })}>Add to review demo →</button>}
+        {draft && <button type="button" className="secondary-action" onClick={() => onQueueReview(draft)}>Add to local demo</button>}
+        {draft && onSubmitCloud && <button type="button" className="primary" disabled={sending || sent} onClick={() => void submitCloud()}>{sending ? 'Uploading privately…' : sent ? 'Submitted to cloud' : 'Submit unverified cloud evidence'}</button>}
       </div>
       {error && <p className="capture-error" role="alert">{error}</p>}
       <div className="capture-summary">
