@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   devnetExplorerAddress, devnetExplorerTransaction, inspectDevnetAccount,
   type DevnetAccount,
@@ -10,11 +10,6 @@ export default function DevnetWalletInspector({ address }: Props) {
   const [account, setAccount] = useState<DevnetAccount | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    setAccount(null)
-    setError('')
-  }, [address])
 
   async function refresh() {
     if (!address) return
