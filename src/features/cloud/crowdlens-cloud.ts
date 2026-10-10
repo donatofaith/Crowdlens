@@ -10,6 +10,7 @@ export interface CrowdLensCloudConfig {
 
 export interface CrowdLensSession {
   accessToken: string
+  refreshToken: string
   userId: string
   expiresAt: number
 }
@@ -81,9 +82,11 @@ export function createCrowdLensCloud(config: CrowdLensCloudConfig) {
       if (typeof window === 'undefined') return null
       const fragment = new URLSearchParams(window.location.hash.slice(1))
       const accessToken = fragment.get('access_token')
+      const refreshToken = fragment.get('refresh_token')
       if (!accessToken) return null
       // Clean tokens out of browser history as soon as they are read.
       window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      if (!refreshToken) throw new Error('Magic link did not include a refresh token.')
       if (fragment.get('token_type') !== 'bearer') throw new Error('Unexpected email link token type.')
       const user = await request<{ id: string }>(`${base}/auth/v1/user`, {
         headers: configHeaders(config, accessToken),
@@ -91,19 +94,40 @@ export function createCrowdLensCloud(config: CrowdLensCloudConfig) {
       if (!user.id) throw new Error('Email link did not return an authenticated user.')
       const expiresSeconds = Number(fragment.get('expires_in') || '0')
       if (!Number.isFinite(expiresSeconds) || expiresSeconds <= 0) throw new Error('Email link is expired.')
-      return { accessToken, userId: user.id, expiresAt: Date.now() + expiresSeconds * 1000 }
+      return { accessToken, refreshToken, userId: user.id, expiresAt: Date.now() + expiresSeconds * 1000 }
     },
     async verifyEmailCode(email: string, code: string): Promise<CrowdLensSession> {
       const body = await request<{
         access_token: string
+        refresh_token: string
         expires_in: number
         user: { id: string }
       }>(`${base}/auth/v1/verify`, {
         method: 'POST', headers: configHeaders(config),
         body: JSON.stringify({ email, token: code, type: 'email' }),
       })
-      if (!body.access_token || !body.user?.id) throw new Error('Authentication did not return a valid session.')
-      return { accessToken: body.access_token, userId: body.user.id, expiresAt: Date.now() + body.expires_in * 1000 }
+      if (!body.access_token || !body.refresh_token || !body.user?.id) throw new Error('Authentication did not return a valid session.')
+      return { accessToken: body.access_token, refreshToken: body.refresh_token, userId: body.user.id, expiresAt: Date.now() + body.expires_in * 1000 }
+    },
+    async refreshSession(session: CrowdLensSession): Promise<CrowdLensSession> {
+      const body = await request<{
+        access_token: string; refresh_token: string; expires_in: number; user: { id: string }
+      }>(`${base}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST', headers: configHeaders(config),
+        body: JSON.stringify({ refresh_token: session.refreshToken }),
+      })
+      if (!body.access_token || !body.refresh_token || body.user?.id !== session.userId) {
+        throw new Error('Could not safely renew your account session.')
+      }
+      return {
+        accessToken: body.access_token, refreshToken: body.refresh_token,
+        userId: session.userId, expiresAt: Date.now() + body.expires_in * 1000,
+      }
+    },
+    async signOut(session: CrowdLensSession): Promise<void> {
+      await request<void>(`${base}/auth/v1/logout`, {
+        method: 'POST', headers: configHeaders(config, session.accessToken),
+      })
     },
     async listMissions(session: CrowdLensSession): Promise<CloudMission[]> {
       return request<CloudMission[]>(`${base}/rest/v1/crowdlens_missions?select=*&status=eq.open&order=created_at.desc&limit=100`, {
