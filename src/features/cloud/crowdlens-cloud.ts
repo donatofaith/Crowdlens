@@ -168,6 +168,14 @@ export function createCrowdLensCloud(config: CrowdLensCloudConfig) {
       if (!response.ok) throw new Error(`Private photo upload failed (HTTP ${response.status}).`)
       return path
     },
+    async getPrivatePhoto(session: CrowdLensSession, photoPath: string): Promise<Blob> {
+      if (!/^[a-f0-9-]{36}\/[a-zA-Z0-9_-]+\.jpg$/.test(photoPath)) throw new Error('Unexpected proof photo path.')
+      const response = await fetch(`${base}/storage/v1/object/crowdlens-proofs/${photoPath}`, {
+        headers: { apikey: config.publishableKey, Authorization: `Bearer ${session.accessToken}` },
+      })
+      if (!response.ok) throw new Error(`Private photo access denied (HTTP ${response.status}).`)
+      return response.blob()
+    },
     async createBrowserSubmission(session: CrowdLensSession, input: {
       missionId: string; photoPath: string; latitude: number; longitude: number; accuracy: number; distance: number
     }): Promise<CloudSubmission> {
