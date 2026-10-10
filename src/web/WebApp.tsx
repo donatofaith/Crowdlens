@@ -48,15 +48,16 @@ export default function WebApp() {
   const [walletMessage, setWalletMessage] = useState('')
   const [signatureComplete, setSignatureComplete] = useState(false)
   useEffect(() => {
-    if (!cloudClient) return
+    const client = cloudClient
+    if (!client) return
     if (!window.location.hash.includes('access_token=')) return
     let active = true
-    void cloudClient.completeEmailLinkFromUrl().then(async (session) => {
+    void client.completeEmailLinkFromUrl().then(async (session) => {
       if (!session || !active) return
       setCloudSession(session)
       setPage('profile')
       try {
-        const rows = await cloudClient.listMissions(session)
+        const rows = await client.listMissions(session)
         if (active) setCloudMissions(rows.map(fromCloud))
       } catch (error) {
         if (active) setAuthCallbackError(error instanceof Error ? error.message : 'Signed in, but missions could not be loaded.')
