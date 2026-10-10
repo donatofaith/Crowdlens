@@ -1,5 +1,6 @@
 export type BrowserWallet = {
   isPhantom?: boolean
+  isSolflare?: boolean
   isConnected?: boolean
   publicKey?: { toString(): string } | null
   connect(): Promise<{ publicKey: { toString(): string } }>
@@ -10,6 +11,8 @@ export type BrowserWallet = {
 }
 type BrowserWithWallet = Window & {
   phantom?: { solana?: BrowserWallet }
+  trustwallet?: { solana?: BrowserWallet }
+  solflare?: BrowserWallet
   solana?: BrowserWallet
 }
 
@@ -34,3 +37,32 @@ export function friendlyWalletMessage(error: unknown): string {
 export function encodeWebMessage(message: string): Uint8Array {
   return new TextEncoder().encode(message)
 }
+
+export type WalletChoice = 'phantom' | 'trust' | 'solflare'
+export const WALLET_LABELS: Record<WalletChoice, string> = {
+  phantom: 'Phantom',
+  trust: 'Trust Wallet',
+  solflare: 'Solflare',
+}
+
+/** Only identify actual Solana injected providers. EVM providers are not compatible. */
+export function getBrowserWallet(choice: WalletChoice): BrowserWallet | null {
+  if (typeof window === 'undefined') return null
+  const browser = window as BrowserWithWallet
+  if (choice === 'trust') return browser.trustwallet?.solana ?? null
+  if (choice === 'solflare') return browser.solflare ?? (browser.solana?.isSolflare ? browser.solana : null)
+  return getPhantomWallet()
+}
+
+export function availableBrowserWallets(): WalletChoice[] {
+  return (['phantom', 'trust', 'solflare'] as WalletChoice[]).filter((choice) => Boolean(getBrowserWallet(choice)))
+}
+
+export const CROWDLENS_WEB_URL = 'https://crowdlens-tawny.vercel.app/'
+/**
+ * Trust Wallet's documented open_url deep link requests the dApp browser.
+ * Only the fixed app origin is used; never put Auth callback tokens in URLs.
+ * This opens the app but does not itself establish a wallet connection.
+ */
+export const TRUST_WALLET_DAPP_URL = 'https://link.trustwallet.com/open_url?coin_id=501&url=' +
+  encodeURIComponent(CROWDLENS_WEB_URL)
