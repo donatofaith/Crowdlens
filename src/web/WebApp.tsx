@@ -4,6 +4,8 @@ import CloudWorkspace, { cloudClient } from './CloudWorkspace'
 import { persistCloudSession, readSavedCloudSession } from './cloud-session-storage'
 import type { CloudMission, CrowdLensSession } from '../features/cloud/crowdlens-cloud'
 import BrowserReviewSession from './BrowserReviewSession'
+import CloudReviewInbox from './CloudReviewInbox'
+import type { CloudSubmission } from '../features/cloud/crowdlens-cloud'
 import { newBrowserDemoSubmission, reviewBrowserDemoSubmission } from './browser-demo-submissions'
 import type { BrowserDemoSubmission, BrowserEvidenceDraft } from './browser-demo-submissions'
 import { compactAddress, encodeWebMessage, friendlyWalletMessage, getPhantomWallet } from './browser-wallet'
@@ -11,11 +13,11 @@ import { DEFAULT_MISSIONS } from '../features/missions/data-access/mission-model
 import { MISSION_RADII, sortMissions, validateMissionDraft, type MissionSort } from '../features/missions/data-access/mission-rules'
 import type { Mission as SharedMission } from '../features/missions/data-access/mission-model'
 
-type Mission = SharedMission & { local?: boolean; cloud?: boolean }
+type Mission = SharedMission & { local?: boolean; cloud?: boolean; cloudRequesterId?: string }
 function fromCloud(m: CloudMission): Mission {
   return { id: m.id, title: m.title, place: m.place, reward: m.reward_test_usdc, radius: m.radius_m,
     targetLat: m.target_lat, targetLon: m.target_lon, distanceLabel: 'Shared mission', icon: 'location-outline',
-    createdAt: m.created_at, source: 'local', cloud: true }
+    createdAt: m.created_at, source: 'local', cloud: true, cloudRequesterId: m.requester_id }
 }
 type Page = 'home' | 'missions' | 'create' | 'activity' | 'profile'
 const KEY = 'crowdlens:web-missions:v1'
@@ -32,6 +34,8 @@ export default function WebApp() {
   const [missions, setMissions] = useState<Mission[]>(initialMissions)
   const [cloudSession, setCloudSession] = useState<CrowdLensSession | null>(readSavedCloudSession)
   const [cloudMissions, setCloudMissions] = useState<Mission[]>([])
+  const [cloudSubmissions, setCloudSubmissions] = useState<CloudSubmission[]>([])
+  const [cloudActivityError, setCloudActivityError] = useState('')
   const [authCallbackError, setAuthCallbackError] = useState('')
   useEffect(() => { persistCloudSession(cloudSession) }, [cloudSession])
   useEffect(() => {
@@ -137,12 +141,45 @@ export default function WebApp() {
     if (!cloudClient || !cloudSession) return
     let active = true
     const client = cloudClient
+    void client.listSubmissions(cloudSession).then((rows) => {
+      if (active) setCloudSubmissions(rows)
+    }).catch(() => { /* The inbox has a refresh control for API errors. */ })
     void client.listMissions(cloudSession).then((rows) => {
       if (active) setCloudMissions(rows.map(fromCloud))
     }).catch(() => { /* CloudWorkspace exposes manual refresh and auth errors. */ })
     return () => { active = false }
   }, [cloudSession])
   const sorted = useMemo(() => sortMissions(shownMissions, filter), [shownMissions, filter])
+  async function refreshCloudActivity() {
+    if (!cloudClient || !cloudSession) return
+    try {
+      const activeSession = cloudSession.expiresAt <= Date.now() + 15000
+        ? await cloudClient.refreshSession(cloudSession) : cloudSession
+      if (activeSession !== cloudSession) setCloudSession(activeSession)
+      const rows = await cloudClient.listSubmissions(activeSession)
+      setCloudSubmissions(rows); setCloudActivityError('')
+    } catch (error) {
+      setCloudActivityError(error instanceof Error ? error.message : 'Unable to load cloud activity.')
+    }
+  }
+  async function submitCloudEvidence(draft: BrowserEvidenceDraft) {
+    if (!cloudClient || !cloudSession) throw new Error('Sign into the shared workspace before submitting.')
+    const mission = cloudMissions.find((item) => item.id === draft.missionId)
+    if (!mission) throw new Error('This is a local mission. Shared proof uploads require a cloud mission.')
+    const activeSession = cloudSession.expiresAt <= Date.now() + 15000
+      ? await cloudClient.refreshSession(cloudSession) : cloudSession
+    if (activeSession !== cloudSession) setCloudSession(activeSession)
+    const rawPhoto = await fetch(draft.photoDataUrl).then((response) => response.blob())
+    if (rawPhoto.type !== 'image/jpeg') throw new Error('The captured photo must be JPEG.')
+    const fileId = globalThis.crypto?.randomUUID?.()
+    if (!fileId) throw new Error('Secure random identifiers are unavailable in this browser.')
+    const path = await cloudClient.uploadPrivateJpeg(activeSession, rawPhoto, fileId + '.jpg')
+    await cloudClient.createBrowserSubmission(activeSession, {
+      missionId: draft.missionId, photoPath: path, latitude: draft.latitude,
+      longitude: draft.longitude, accuracy: draft.accuracyMeters, distance: draft.distanceMeters,
+    })
+    await refreshCloudActivity()
+  }
   function queueBrowserDemo(draft: BrowserEvidenceDraft) {
     setSessionSubmissions((items) => [newBrowserDemoSubmission(draft), ...items])
     navigate('activity')
@@ -194,12 +231,12 @@ export default function WebApp() {
     <main className="main">
       <header className="topbar"><span className="top-logo">CROWD<span>LENS</span></span><span className="top-pill"><span className="online-dot"/> BROWSER DEMO</span></header>
       <div className="content">
-      {selected && capturePreview ? <BrowserCapture mission={selected} onBack={() => setCapturePreview(false)} onQueueReview={queueBrowserDemo} /> : selected ? <><button className="back" onClick={() => setSelected(null)}>← Back to missions</button><div className="eyebrow">MISSION DETAILS</div><h1>{selected.title}</h1><div className="hero"><span className="hero-tag">● LIVE REQUEST</span><h2>{selected.title}</h2><p>{selected.place}</p><div className="hero-footer"><strong>{selected.reward} <small>TEST USDC</small></strong><span>{selected.radius} m verification zone</span></div></div><div className="panel"><h3>Proof of Presence</h3><p>The Android app verifies repeated GPS readings, captures a live photo, and signs the proof with a Solana Mobile wallet. This browser preview does not claim to verify physical presence.</p><div className="capture-controls"><button className="primary" onClick={() => setCapturePreview(true)}>Try browser GPS + camera →</button><button className="secondary-action" onClick={() => setSelected(null)}>Browse other missions</button></div></div></> :
+      {selected && capturePreview ? <BrowserCapture mission={selected} onBack={() => setCapturePreview(false)} onQueueReview={queueBrowserDemo} onSubmitCloud={cloudSession && selected.cloud ? submitCloudEvidence : undefined} /> : selected ? <><button className="back" onClick={() => setSelected(null)}>← Back to missions</button><div className="eyebrow">MISSION DETAILS</div><h1>{selected.title}</h1><div className="hero"><span className="hero-tag">● LIVE REQUEST</span><h2>{selected.title}</h2><p>{selected.place}</p><div className="hero-footer"><strong>{selected.reward} <small>TEST USDC</small></strong><span>{selected.radius} m verification zone</span></div></div><div className="panel"><h3>Proof of Presence</h3><p>The Android app verifies repeated GPS readings, captures a live photo, and signs the proof with a Solana Mobile wallet. This browser preview does not claim to verify physical presence.</p><div className="capture-controls"><button className="primary" onClick={() => setCapturePreview(true)}>Try browser GPS + camera →</button><button className="secondary-action" onClick={() => setSelected(null)}>Browse other missions</button></div></div></> :
       page === 'home' ? <><div className="eyebrow">CROWDLENS</div><div className="native-greeting"><h1>Hi Faith</h1><button className="native-avatar" aria-label="Open profile" onClick={() => navigate('profile')}>F</button></div><div className="native-orange-panel"><div className="native-panel-top"><div><span className="native-small">NEARBY NOW</span><div className="native-count">{shownMissions.length}</div><span className="native-count-caption">missions waiting</span></div><div className="native-radar"><div>◎</div></div></div><div className="native-quick-actions"><button onClick={() => navigate('missions')}><span>➤</span>Nearby</button><button onClick={() => navigate('create')}><span>＋</span>Create</button><button onClick={() => navigate('activity')}><span>◷</span>Active</button><button onClick={() => navigate('profile')}><span>◇</span>Wallet</button></div></div><button className="native-search" onClick={() => navigate('missions')}><span>⌕</span>Browse missions<span className="native-options">☷</span></button><div className="section-head"><h3>Closest mission</h3></div><div className="missions">{shownMissions.length ? shownMissions.slice(0,1).map(tile) : <button className="mission-card" onClick={() => navigate('create')}>Create the first mission →</button>}</div><div className="native-quote"><span>♧</span>Real-world proof, captured where it happens.</div></> :
       page === 'missions' ? <><div className="eyebrow">DISCOVER</div><div className="section-head"><h1>Missions</h1><button className="primary small" onClick={() => navigate('create')}>+ Create mission</button></div><div className="filters">{['Nearby','Reward','New'].map(x => <button key={x} className={filter===x?'chosen':''} onClick={() => setFilter(x as MissionSort)}>{x}</button>)}</div><div className="missions">{sorted.map(tile)}</div></> :
       page === 'create' ? <><div className="eyebrow">NEW REQUEST</div><h1>Create mission</h1><div className="native-create-form"><label className="native-question">What do you need checked?<textarea value={question} onChange={e => setQuestion(e.target.value)} placeholder="Is the event happening right now?" /></label><label className="native-field-label">Location name<input value={place} onChange={e => setPlace(e.target.value)} placeholder="e.g. Conference Centre, Ibadan"/></label><button className={'native-pin '+(pin?'pinned':'')} onClick={pinLocation} disabled={busy}><span>◎</span><span><strong>{busy ? 'Finding your location…' : pin ? 'Mission point pinned' : 'Pin current GPS location'}</strong><small>{pin ? '±' + Math.round(pin.accuracy) + ' m accuracy' : 'Used as the centre of the verification zone'}</small></span></button><div className="native-form-section"><strong>Radius</strong><small>Scout must be inside</small></div><div className="native-radius">{MISSION_RADII.map(n => <button key={n} className={radius===n?'chosen':''} onClick={() => setRadius(n)}>{n} m</button>)}</div><div className="native-form-section"><strong>Proof</strong></div><div className="native-proof"><span>▣</span><div><strong>Live photo + GPS</strong><small>Captured inside CrowdLens Android</small></div><span>✓</span></div><label className="native-field-label">Reward <span className="native-reward"><strong>USDC</strong><input type="number" min="0.01" step="0.01" value={reward} onChange={e => setReward(e.target.value)} placeholder="3.00"/><em>TEST</em></span></label>{message && <p role="alert" className="feedback">{message}</p>}<button className="native-publish" disabled={busy} onClick={() => void publish()}>{busy ? 'Publishing…' : cloudSession ? 'Publish shared mission' : 'Publish local mission'} <span>→</span></button><p className="native-form-note">{cloudSession ? 'Signed in: this mission will be saved to the shared database.' : 'Not signed into cloud: this mission will be saved only in this browser.'}</p></div></> :
-      page === 'activity' ? <BrowserReviewSession submissions={sessionSubmissions} onDecision={decideBrowserDemo} onClear={() => setSessionSubmissions([])} onExplore={() => navigate('missions')} /> :
-      <><div className="eyebrow">SCOUT</div><h1>Profile</h1><div className="web-profile-banner"><div className="web-profile-avatar">FO</div><div><strong>Scout profile</strong><small>CrowdLens web preview</small></div><span>◎</span></div><div className="panel web-wallet-panel"><h3>Solana wallet</h3><p>{walletAddress ? 'Your Phantom wallet is connected in this browser.' : 'Connect a Phantom browser wallet to test wallet authorization. Android continues using Mobile Wallet Adapter.'}</p>{walletAddress && <div className="web-wallet-address"><span className="online-dot"/> Connected · <code title={walletAddress}>{compactAddress(walletAddress)}</code></div>}<div className="web-wallet-actions">{!walletAddress ? <button className="primary" onClick={() => void connectWallet()} disabled={walletBusy}>{walletBusy ? 'Connecting…' : 'Connect Phantom wallet'}</button> : <><button className="primary" onClick={() => void testWalletSignature()} disabled={walletBusy}>{walletBusy ? 'Waiting for wallet…' : 'Sign test message'}</button><button className="secondary-action" onClick={() => void disconnectWallet()} disabled={walletBusy}>Disconnect</button></>}</div>{walletMessage && <p role="status" className={signatureComplete ? 'web-wallet-success' : 'web-wallet-feedback'}>{walletMessage}</p>}<small className="web-wallet-disclaimer">Signing a test message is not Proof of Presence, a Devnet receipt, or a payment. Never enter your recovery phrase into CrowdLens.</small></div>{authCallbackError && <p role="alert" className="feedback">{authCallbackError}</p>}<CloudWorkspace session={cloudSession} onSession={(next) => { setCloudSession(next); if (!next) setCloudMissions([]); setAuthCallbackError('') }} onMissions={(items) => setCloudMissions(items.map(fromCloud))} /></>}
+      page === 'activity' ? <><BrowserReviewSession submissions={sessionSubmissions} onDecision={decideBrowserDemo} onClear={() => setSessionSubmissions([])} onExplore={() => navigate('missions')} />{cloudSession && <CloudReviewInbox session={cloudSession} submissions={cloudSubmissions} onRefresh={refreshCloudActivity} onReviewed={refreshCloudActivity} missionOwners={Object.fromEntries(cloudMissions.map((m) => [m.id, m.cloudRequesterId || '']))} />}{cloudActivityError && <p role="alert" className="feedback">{cloudActivityError}</p>}</> :
+      <><div className="eyebrow">SCOUT</div><h1>Profile</h1><div className="web-profile-banner"><div className="web-profile-avatar">FO</div><div><strong>Scout profile</strong><small>CrowdLens web preview</small></div><span>◎</span></div><div className="panel web-wallet-panel"><h3>Solana wallet</h3><p>{walletAddress ? 'Your Phantom wallet is connected in this browser.' : 'Connect a Phantom browser wallet to test wallet authorization. Android continues using Mobile Wallet Adapter.'}</p>{walletAddress && <div className="web-wallet-address"><span className="online-dot"/> Connected · <code title={walletAddress}>{compactAddress(walletAddress)}</code></div>}<div className="web-wallet-actions">{!walletAddress ? <button className="primary" onClick={() => void connectWallet()} disabled={walletBusy}>{walletBusy ? 'Connecting…' : 'Connect Phantom wallet'}</button> : <><button className="primary" onClick={() => void testWalletSignature()} disabled={walletBusy}>{walletBusy ? 'Waiting for wallet…' : 'Sign test message'}</button><button className="secondary-action" onClick={() => void disconnectWallet()} disabled={walletBusy}>Disconnect</button></>}</div>{walletMessage && <p role="status" className={signatureComplete ? 'web-wallet-success' : 'web-wallet-feedback'}>{walletMessage}</p>}<small className="web-wallet-disclaimer">Signing a test message is not Proof of Presence, a Devnet receipt, or a payment. Never enter your recovery phrase into CrowdLens.</small></div>{authCallbackError && <p role="alert" className="feedback">{authCallbackError}</p>}<CloudWorkspace session={cloudSession} onSession={(next) => { setCloudSession(next); if (!next) { setCloudMissions([]); setCloudSubmissions([]) }; setAuthCallbackError('') }} onMissions={(items) => setCloudMissions(items.map(fromCloud))} /></>}
       <footer className="footer">CrowdLens · Hackathon web preview · Demo rewards are simulated · Android remains the verified proof experience.</footer>
       </div>
     </main>
