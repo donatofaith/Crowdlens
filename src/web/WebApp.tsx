@@ -9,10 +9,20 @@ import CloudReviewInbox from './CloudReviewInbox'
 import type { CloudSubmission } from '../features/cloud/crowdlens-cloud'
 import { newBrowserDemoSubmission, reviewBrowserDemoSubmission } from './browser-demo-submissions'
 import type { BrowserDemoSubmission, BrowserEvidenceDraft } from './browser-demo-submissions'
-import { availableBrowserWallets, compactAddress, encodeWebMessage, friendlyWalletMessage, getBrowserWallet, getPhantomWallet, TRUST_WALLET_DAPP_URL, WALLET_LABELS, type WalletChoice } from './browser-wallet'
+import { availableBrowserWallets, compactAddress, encodeWebMessage, friendlyWalletMessage, getBrowserWallet, TRUST_WALLET_DAPP_URL, WALLET_LABELS, type WalletChoice } from './browser-wallet'
 import { DEFAULT_MISSIONS } from '../features/missions/data-access/mission-model'
 import { MISSION_RADII, sortMissions, validateMissionDraft, type MissionSort } from '../features/missions/data-access/mission-rules'
 import type { Mission as SharedMission } from '../features/missions/data-access/mission-model'
+
+function connectedWalletOnLoad(): { provider: WalletChoice; address: string | null } {
+  for (const provider of ['trust', 'phantom', 'solflare'] as WalletChoice[]) {
+    const wallet = getBrowserWallet(provider)
+    if (wallet?.isConnected && wallet.publicKey) {
+      return { provider, address: wallet.publicKey.toString() }
+    }
+  }
+  return { provider: 'phantom', address: null }
+}
 
 type Mission = SharedMission & { local?: boolean; cloud?: boolean; cloudRequesterId?: string }
 function fromCloud(m: CloudMission): Mission {
@@ -64,10 +74,10 @@ export default function WebApp() {
   const [pin, setPin] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
-  const [walletAddress, setWalletAddress] = useState<string | null>(() => { const wallet = getPhantomWallet(); return wallet?.isConnected ? wallet.publicKey?.toString() ?? null : null })
+  const [walletAddress, setWalletAddress] = useState<string | null>(() => connectedWalletOnLoad().address)
   const [walletBusy, setWalletBusy] = useState(false)
   const [walletChooserOpen, setWalletChooserOpen] = useState(false)
-  const [walletProvider, setWalletProvider] = useState<WalletChoice>('phantom')
+  const [walletProvider, setWalletProvider] = useState<WalletChoice>(() => connectedWalletOnLoad().provider)
   const [walletMessage, setWalletMessage] = useState('')
   const [signatureComplete, setSignatureComplete] = useState(false)
   useEffect(() => {
