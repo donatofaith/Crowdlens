@@ -30,3 +30,6 @@ jobs:
 
       - name: Web export
         run: npm run build:web
+
+      - name: Android JavaScript export
+        run: npx expo export --platform android --output-dir /tmp/crowdlens-android-export
