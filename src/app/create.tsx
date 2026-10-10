@@ -2,6 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import * as Location from 'expo-location'
 import { router } from 'expo-router'
 import { useState } from 'react'
+import { useStore } from '@nanostores/react'
+import { $nativeSession, $sharedMissions, activeNativeSession, fromNativeCloudMission, nativeCloud } from '@/features/cloud/native-cloud'
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -10,6 +12,8 @@ import { MISSION_RADII, validateMissionDraft } from '@/features/missions/data-ac
 
 export default function CreateMissionScreen() {
   const insets = useSafeAreaInsets()
+  const cloudSession = useStore($nativeSession)
+  const [publishing, setPublishing] = useState(false)
   const [question, setQuestion] = useState('')
   const [locationName, setLocationName] = useState('')
   const [reward, setReward] = useState('')
@@ -41,7 +45,8 @@ export default function CreateMissionScreen() {
     }
   }
 
-  function publishMission() {
+  async function publishMission() {
+    if (publishing) return
     const amount = Number(reward)
 
     if (!pin) {
@@ -63,14 +68,29 @@ export default function CreateMissionScreen() {
       return
     }
 
+    if (cloudSession && nativeCloud) {
+      setPublishing(true)
+      try {
+        const session = await activeNativeSession()
+        const saved = await nativeCloud.createMission(session, {
+          title: draft.title, place: draft.place, reward: draft.reward,
+          radius: draft.radius as 25 | 50 | 100,
+          latitude: draft.targetLat, longitude: draft.targetLon,
+        })
+        $sharedMissions.set([fromNativeCloudMission(saved), ...$sharedMissions.get()])
+        setQuestion(''); setLocationName(''); setReward(''); setPin(null)
+        Alert.alert('Shared mission published', 'This mission is now available to signed-in CrowdLens users on web and Android.', [
+          { text: 'View missions', onPress: () => router.replace('/tools') },
+        ])
+      } catch (error) {
+        Alert.alert('Cloud publication failed', error instanceof Error ? error.message : 'Try again. Mission not saved.')
+      } finally { setPublishing(false) }
+      return
+    }
+
     addMission(draft)
-
-    setQuestion('')
-    setLocationName('')
-    setReward('')
-    setPin(null)
-
-    Alert.alert('Mission published', 'It is now available in Missions on this device.', [
+    setQuestion(''); setLocationName(''); setReward(''); setPin(null)
+    Alert.alert('Local mission published', 'This mission is saved on this device only. Sign in from Profile for cross-device missions.', [
       { text: 'View missions', onPress: () => router.replace('/tools') },
     ])
   }
@@ -152,12 +172,12 @@ export default function CreateMissionScreen() {
           <Text style={styles.devnet}>TEST</Text>
         </View>
 
-        <Pressable onPress={publishMission} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Publish mission</Text>
+        <Pressable onPress={() => void publishMission()} disabled={publishing} style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>{publishing ? 'Publishing…' : cloudSession ? 'Publish shared mission' : 'Publish local mission'}</Text>
           <View style={styles.arrowButton}><Ionicons color="#FF7A18" name="arrow-forward" size={17} /></View>
         </Pressable>
 
-        <Text style={styles.note}>Hackathon build: newly created missions are stored locally on this device.</Text>
+        <Text style={styles.note}>{cloudSession ? 'Your mission will be saved to Supabase and visible across signed-in devices. Rewards are simulated.' : 'Not signed into cloud: missions are saved only on this device. Sign in from Profile to share.'}</Text>
       </ScrollView>
     </View>
   )
