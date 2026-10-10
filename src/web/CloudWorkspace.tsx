@@ -99,6 +99,6 @@ export default function CloudWorkspace({ session, onSession, onMissions }: Props
       </>
     )}
     {status && <p role="status" className="cloud-status">{status}</p>}
-    <small className="web-wallet-disclaimer">Cloud sign-in now persists on this browser and is renewed automatically while valid. Use Sign out on shared devices. Proof submissions are not yet connected to this workspace; test rewards are simulated, not payments.</small>
+    <small className="web-wallet-disclaimer">Cloud sign-in now persists on this browser and is renewed automatically while valid. Use Sign out on shared devices. Private browser proof submissions and demo requester review are available for shared missions. Test rewards are simulated, not payments.</small>
   </section>
 }
