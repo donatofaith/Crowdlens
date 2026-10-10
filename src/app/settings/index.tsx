@@ -1,13 +1,46 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useMobileWallet } from '@wallet-ui/react-native-kit'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useStore } from '@nanostores/react'
+import { useState } from 'react'
+import { $nativeSession, nativeCloud, refreshNativeSharedMissions, setNativeSession, signOutNativeCloud } from '@/features/cloud/native-cloud'
 
 import { WalletUiConnectButton } from '@/features/wallet/ui/wallet-ui-connect-button'
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets()
   const wallet = useMobileWallet()
+  const cloudSession = useStore($nativeSession)
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [codeSent, setCodeSent] = useState(false)
+  const [cloudWorking, setCloudWorking] = useState(false)
+  const [cloudStatus, setCloudStatus] = useState('')
+
+  async function sendCode() {
+    if (!nativeCloud || cloudWorking) return
+    setCloudWorking(true); setCloudStatus('')
+    try {
+      await nativeCloud.requestEmailCode(email.trim())
+      setCodeSent(true)
+      setCloudStatus('Check your email for a CrowdLens verification code.')
+    } catch (error) { setCloudStatus(error instanceof Error ? error.message : 'Could not send the code.') }
+    finally { setCloudWorking(false) }
+  }
+
+  async function verifyCode() {
+    if (!nativeCloud || cloudWorking) return
+    setCloudWorking(true); setCloudStatus('')
+    try {
+      const session = await nativeCloud.verifyEmailCode(email.trim(), code.trim())
+      setNativeSession(session)
+      const count = await refreshNativeSharedMissions()
+      setCloudStatus('Signed in. ' + count + ' shared missions loaded.')
+    } catch (error) { setCloudStatus(error instanceof Error ? error.message : 'Could not verify the code.') }
+    finally { setCloudWorking(false) }
+  }
+
   const address = wallet.account?.address.toString()
 
   return (
@@ -54,6 +87,32 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        <View style={styles.cloudCard}>
+          <Text style={styles.cloudTitle}>CrowdLens account</Text>
+          {!nativeCloud ? (
+            <Text style={styles.cloudHint}>Cloud access is not configured in this APK build. Set the public Supabase environment variables and rebuild.</Text>
+          ) : cloudSession ? (
+            <>
+              <Text style={styles.cloudConnected}>Signed in · Shared missions enabled</Text>
+              <View style={styles.cloudActions}>
+                <Pressable onPress={() => { setCloudWorking(true); void refreshNativeSharedMissions().then((count) => setCloudStatus(count + ' shared missions loaded.')).catch((error: unknown) => setCloudStatus(error instanceof Error ? error.message : 'Refresh failed.')).finally(() => setCloudWorking(false)) }} disabled={cloudWorking} style={styles.cloudSecondary}><Text style={styles.cloudSecondaryText}>Refresh missions</Text></Pressable>
+                <Pressable onPress={() => { setCloudWorking(true); void signOutNativeCloud().then(() => { setCodeSent(false); setCode(''); setCloudStatus('Signed out.') }).finally(() => setCloudWorking(false)) }} disabled={cloudWorking} style={styles.cloudSecondary}><Text style={styles.cloudSecondaryText}>Sign out</Text></Pressable>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.cloudHint}>Sign in with an email verification code to access missions on both Android and the website.</Text>
+              <TextInput style={styles.cloudInput} keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholder="Email address" placeholderTextColor="#77777D" value={email} onChangeText={setEmail} />
+              {codeSent && <TextInput style={styles.cloudInput} keyboardType="number-pad" placeholder="Six-digit verification code" placeholderTextColor="#77777D" value={code} onChangeText={setCode} />}
+              <Pressable disabled={cloudWorking || (codeSent ? !code.trim() : !email.includes('@'))} style={styles.cloudPrimary} onPress={() => void (codeSent ? verifyCode() : sendCode())}>
+                {cloudWorking ? <ActivityIndicator color="#111" /> : <Text style={styles.cloudPrimaryText}>{codeSent ? 'Verify code' : 'Send verification code'}</Text>}
+              </Pressable>
+              {codeSent && <Pressable onPress={() => { setCodeSent(false); setCode(''); setCloudStatus('') }} style={styles.cloudChange}><Text style={styles.cloudChangeText}>Change email</Text></Pressable>}
+            </>
+          )}
+          {cloudStatus ? <Text style={styles.cloudHint}>{cloudStatus}</Text> : null}
+        </View>
+
         <View style={styles.proofCard}>
           <View style={styles.proofIcon}><Ionicons color="#111111" name="location-outline" size={19} /></View>
           <View style={styles.proofCopy}>
@@ -77,6 +136,19 @@ function Stat({ value, label, accent = false }: { value: string; label: string; 
 }
 
 const styles = StyleSheet.create({
+  cloudCard: { backgroundColor: '#151517', borderColor: '#29292E', borderWidth: 1, borderRadius: 23, padding: 17, gap: 12, marginBottom: 15 },
+  cloudTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  cloudHint: { color: '#A4A4AB', fontSize: 11, lineHeight: 17 },
+  cloudConnected: { color: '#8DDBA0', fontSize: 12, fontWeight: '700' },
+  cloudInput: { minHeight: 46, borderRadius: 13, backgroundColor: '#0E0E10', borderColor: '#45454C', borderWidth: 1, color: '#FFFFFF', paddingHorizontal: 13, fontSize: 13 },
+  cloudPrimary: { minHeight: 47, backgroundColor: '#F36B08', borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  cloudPrimaryText: { color: '#101010', fontWeight: '900', fontSize: 12 },
+  cloudChange: { paddingVertical: 5, alignSelf: 'center' },
+  cloudChangeText: { color: '#FF943F', fontWeight: '700', fontSize: 12 },
+  cloudActions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  cloudSecondary: { paddingHorizontal: 13, paddingVertical: 13, borderRadius: 12, backgroundColor: '#29292D' },
+  cloudSecondaryText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
+
   screen: { flex: 1, backgroundColor: '#0C0C0D' },
   content: { paddingHorizontal: 18, paddingBottom: 30 },
   kicker: { color: '#FF7A18', fontSize: 9, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
