@@ -1,19 +1,31 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useStore } from '@nanostores/react'
-import { router } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { router, useFocusEffect } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { $missions } from '@/features/missions/data-access/mission-store'
+import { $nativeSession, $sharedMissions, refreshNativeSharedMissions } from '@/features/cloud/native-cloud'
 import { sortMissions, type MissionSort } from '@/features/missions/data-access/mission-rules'
 
 export default function MissionsScreen() {
   const insets = useSafeAreaInsets()
   const missions = useStore($missions)
+  const shared = useStore($sharedMissions)
+  const session = useStore($nativeSession)
+  const [cloudError, setCloudError] = useState('')
+  useFocusEffect(useCallback(() => {
+    if (!session) return
+    let active = true
+    void refreshNativeSharedMissions().then(() => { if (active) setCloudError('') }).catch((error: unknown) => {
+      if (active) setCloudError(error instanceof Error ? error.message : 'Shared missions unavailable.')
+    })
+    return () => { active = false }
+  }, [session?.userId]))
   const [filter, setFilter] = useState<MissionSort>('Nearby')
 
-  const visibleMissions = useMemo(() => sortMissions(missions, filter), [filter, missions])
+  const visibleMissions = useMemo(() => sortMissions([...shared, ...missions], filter), [filter, missions, shared])
 
   function openMission(mission: (typeof visibleMissions)[number]) {
     router.push({
@@ -50,6 +62,7 @@ export default function MissionsScreen() {
           ))}
         </View>
 
+        {session && cloudError ? <Text style={styles.cloudError}>{cloudError}</Text> : null}
         <View style={styles.list}>
           {visibleMissions.map((mission, index) => (
             <Pressable key={mission.id} onPress={() => openMission(mission)} style={[styles.card, index === 0 && styles.cardFeatured]}>
@@ -64,7 +77,7 @@ export default function MissionsScreen() {
                 <Text style={[styles.cardMeta, index === 0 && styles.cardMetaFeatured]}>
                   {mission.place} · {mission.distanceLabel}
                 </Text>
-                {mission.source === 'local' && <Text style={styles.localBadge}>CREATED ON THIS DEVICE</Text>}
+                {shared.some((item) => item.id === mission.id) ? <Text style={styles.cloudBadge}>SHARED CLOUD MISSION</Text> : mission.source === 'local' && <Text style={styles.localBadge}>CREATED ON THIS DEVICE</Text>}
               </View>
 
               <View style={[styles.rewardOrb, index === 0 && styles.rewardOrbFeatured]}>
@@ -80,6 +93,8 @@ export default function MissionsScreen() {
 }
 
 const styles = StyleSheet.create({
+  cloudBadge: { color: '#8CDD9C', fontSize: 7, fontWeight: '900', letterSpacing: 0.6, marginTop: 6 },
+  cloudError: { color: '#FFAD89', fontSize: 12, marginBottom: 12 },
   screen: { flex: 1, backgroundColor: '#0C0C0D' },
   content: { paddingHorizontal: 18, paddingBottom: 30 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
